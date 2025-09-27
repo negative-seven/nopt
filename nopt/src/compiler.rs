@@ -22,7 +22,7 @@ impl Compiler {
 
         let ir = frontend::compile_instruction(bytes);
 
-        for instruction in &ir.instructions {
+        for instruction in &ir.basic_block.instructions {
             match instruction {
                 ir::Instruction::Define1 {
                     variable,
@@ -46,7 +46,7 @@ impl Compiler {
                 } => trace!("ir: {destination:?} = {variable:?}"),
             }
         }
-        trace!("ir: jump to {:?}", ir.jump_target);
+        trace!("ir: jump to {:?}", ir.basic_block.jump_target);
 
         let bytes = cranelift_backend::compile(ir, nes, self.optimize);
 

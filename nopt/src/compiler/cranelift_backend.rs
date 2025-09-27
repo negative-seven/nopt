@@ -10,8 +10,8 @@ use memmap2::Mmap;
 use std::collections::HashMap;
 use target_lexicon::Triple;
 
-pub(super) fn compile(basic_block: ir::BasicBlock, nes: *mut Nes, optimize: bool) -> Mmap {
-    CraneliftBackend::new(optimize).compile(basic_block, nes)
+pub(super) fn compile(ir: ir::Function, nes: *mut Nes, optimize: bool) -> Mmap {
+    CraneliftBackend::new(optimize).compile(ir, nes)
 }
 
 struct CraneliftBackend {
@@ -32,7 +32,7 @@ impl CraneliftBackend {
     }
 
     #[expect(clippy::too_many_lines)]
-    pub(crate) fn compile(mut self, basic_block: ir::BasicBlock, nes: *mut Nes) -> Mmap {
+    pub(crate) fn compile(mut self, ir: ir::Function, nes: *mut Nes) -> Mmap {
         let type_u8 = Type::int(8).unwrap();
         let type_u16 = Type::int(16).unwrap();
 
@@ -80,8 +80,8 @@ impl CraneliftBackend {
             .ins()
             .iconst(isa.pointer_type(), unsafe { &raw mut (*nes).cpu.pc as i64 });
 
-        for definition in basic_block.instructions {
-            match definition {
+        for instruction in ir.basic_block.instructions {
+            match instruction {
                 ir::Instruction::Define1 {
                     variable,
                     definition,
@@ -435,7 +435,7 @@ impl CraneliftBackend {
 
         function_builder.ins().store(
             MemFlags::new(),
-            self.value_16(basic_block.jump_target),
+            self.value_16(ir.basic_block.jump_target),
             nes_cpu_pc_address,
             0,
         );

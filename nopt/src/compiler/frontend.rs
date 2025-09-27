@@ -4,7 +4,7 @@ mod instruction_compiler;
 mod instruction_decoder;
 mod memory_compiler;
 
-pub(super) fn compile_instruction<B>(bytes: B) -> ir::BasicBlock
+pub(super) fn compile_instruction<B>(bytes: B) -> ir::Function
 where
     B: Iterator<Item = (u16, u8)>,
 {

@@ -3,6 +3,10 @@ use std::{
     ops::{BitAnd, BitOr, BitXor, Not, Rem},
 };
 
+pub(super) struct Function {
+    pub basic_block: BasicBlock,
+}
+
 pub(super) struct BasicBlock {
     pub instructions: Vec<Instruction>,
     pub jump_target: Variable16,

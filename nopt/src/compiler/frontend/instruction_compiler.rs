@@ -3,13 +3,13 @@ use crate::{
         frontend::memory_compiler,
         ir::{
             BasicBlock, CpuFlag, CpuRegister, Definition1, Definition8, Definition16, Destination1,
-            Destination8, Instruction, Variable1, Variable8, Variable16,
+            Destination8, Function, Instruction, Variable1, Variable8, Variable16,
         },
     },
     nes_assembly,
 };
 
-pub(super) fn compile<I>(instructions: I) -> BasicBlock
+pub(super) fn compile<I>(instructions: I) -> Function
 where
     I: Iterator<Item = nes_assembly::Instruction>,
 {
@@ -21,7 +21,7 @@ where
         }
         .transpile();
     }
-    basic_block
+    Function { basic_block }
 }
 
 struct InstructionCompiler {
