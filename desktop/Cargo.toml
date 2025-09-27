@@ -1,0 +1,12 @@
+[package]
+name = "nopt_desktop"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.99"
+nopt = { path = "../nopt" }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+
+[lints]
+workspace = true
