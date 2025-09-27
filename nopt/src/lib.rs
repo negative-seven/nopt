@@ -10,15 +10,17 @@ use tracing::trace;
 
 pub struct Nopt {
     nes: Nes,
-    functions: Box<[Option<unsafe extern "C" fn()>; 0x10000]>,
+    prg_rom_functions: Vec<Option<unsafe extern "C" fn()>>,
 }
 
 impl Nopt {
     #[must_use]
     pub fn new(rom: Rom) -> Self {
+        let nes = Nes::new(rom);
+        let functions = vec![None; nes.rom.prg_rom().len()];
         Self {
-            nes: Nes::new(rom),
-            functions: vec![None; 0x10000].into_boxed_slice().try_into().unwrap(),
+            nes,
+            prg_rom_functions: functions,
         }
     }
 
@@ -36,19 +38,26 @@ impl Nopt {
     /// The safety of this function is conditional on the safety of the
     /// underlying backend.
     pub unsafe fn run(&mut self) {
-        let pc = self.nes.cpu.pc;
+        let pc = self.nes().cpu.pc;
+        let prg_rom_len = self.nes().rom.prg_rom().len();
 
-        let function = self
-            .functions
-            .get_mut(usize::from(pc))
-            .unwrap()
-            .get_or_insert_with(|| {
-                trace!("compiling function at 0x{pc:04x}");
+        let mut compile = || {
+            trace!("compiling function at 0x{pc:04x}");
 
-                let mmap = Compiler::new(true).compile(&mut self.nes);
+            let mmap = Compiler::new(true).compile(&mut self.nes);
 
-                unsafe { std::mem::transmute(ManuallyDrop::new(mmap).as_ptr()) }
-            });
+            unsafe { std::mem::transmute(ManuallyDrop::new(mmap).as_ptr()) }
+        };
+
+        let function = if (0x8000..0xfffe).contains(&pc) {
+            *self
+                .prg_rom_functions
+                .get_mut(usize::from(pc) & (prg_rom_len - 1))
+                .unwrap()
+                .get_or_insert_with(compile)
+        } else {
+            compile()
+        };
 
         trace!("running with pc: 0x{pc:04x}");
         unsafe {
