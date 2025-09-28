@@ -9,18 +9,12 @@ use crate::{
     nes_assembly,
 };
 
-pub(super) fn compile<I>(instructions: I) -> Function
-where
-    I: Iterator<Item = nes_assembly::Instruction>,
-{
-    let mut basic_block = BasicBlock::new();
-    for instruction in instructions {
-        basic_block = InstructionCompiler {
-            cpu_instruction: instruction,
-            basic_block,
-        }
-        .transpile();
+pub(super) fn compile(instruction: nes_assembly::Instruction) -> Function {
+    let basic_block = InstructionCompiler {
+        cpu_instruction: instruction,
+        basic_block: BasicBlock::new(),
     }
+    .transpile();
     Function { basic_block }
 }
 

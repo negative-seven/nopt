@@ -44,19 +44,37 @@ impl Nopt {
         let mut compile = || {
             trace!("compiling function at 0x{pc:04x}");
 
-            let mmap = Compiler::new(true).compile(&mut self.nes);
+            let (mmap, is_prg_rom_only) = Compiler::new(true).compile(&mut self.nes);
 
-            unsafe { std::mem::transmute(ManuallyDrop::new(mmap).as_ptr()) }
+            (
+                unsafe {
+                    std::mem::transmute::<*const u8, unsafe extern "C" fn()>(
+                        ManuallyDrop::new(mmap).as_ptr(),
+                    )
+                },
+                is_prg_rom_only,
+            )
         };
 
-        let function = if (0x8000..0xfffe).contains(&pc) {
-            *self
-                .prg_rom_functions
-                .get_mut(usize::from(pc) & (prg_rom_len - 1))
-                .unwrap()
-                .get_or_insert_with(compile)
-        } else {
-            compile()
+        let function = {
+            let mut dummy_entry = None;
+            let entry = if pc >= 0x8000 {
+                self.prg_rom_functions
+                    .get_mut(usize::from(pc) & (prg_rom_len - 1))
+                    .unwrap()
+            } else {
+                &mut dummy_entry
+            };
+
+            if let Some(function) = entry.as_mut() {
+                *function
+            } else {
+                let (function, is_prg_rom_only) = compile();
+                if is_prg_rom_only {
+                    *entry = Some(function);
+                }
+                function
+            }
         };
 
         trace!("running with pc: 0x{pc:04x}");

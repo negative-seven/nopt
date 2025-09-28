@@ -17,10 +17,8 @@ impl Compiler {
         Self { optimize }
     }
 
-    pub(crate) fn compile(&self, nes: &mut Nes) -> Mmap {
-        let bytes = (nes.cpu.pc..).map(|address| (address, nes.peek(address)));
-
-        let ir = frontend::compile_instruction(bytes);
+    pub(crate) fn compile(&self, nes: &mut Nes) -> (Mmap, bool) {
+        let (ir, is_prg_rom_only) = frontend::compile_instruction(nes, nes.cpu.pc);
 
         for instruction in &ir.basic_block.instructions {
             match instruction {
@@ -62,7 +60,7 @@ impl Compiler {
             trace!("native: {formatted_instruction}");
         }
 
-        bytes
+        (bytes, is_prg_rom_only)
     }
 }
 
