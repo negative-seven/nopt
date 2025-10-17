@@ -8,7 +8,8 @@ fn nestest() {
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .with(
             tracing_subscriber::filter::Targets::new()
-                .with_target("nopt", tracing_subscriber::filter::LevelFilter::TRACE),
+                .with_target("nopt", tracing_subscriber::filter::LevelFilter::TRACE)
+                .with_target("nestest", tracing_subscriber::filter::LevelFilter::TRACE),
         )
         .init();
 
