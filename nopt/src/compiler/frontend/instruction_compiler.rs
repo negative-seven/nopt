@@ -1,3 +1,5 @@
+use tracing::warn;
+
 use crate::{
     compiler::{
         frontend::memory_compiler,
@@ -598,6 +600,11 @@ impl InstructionCompiler {
                 let result = self.define_8(CpuRegister::Y);
                 self.store_8(CpuRegister::A, result);
                 self.set_nz(result);
+            }
+            nes_assembly::Mnemonic::Unimplemented => {
+                // unimplemented instructions are treated as a no-op as a
+                // fallback
+                warn!("compiling unimplemented instruction");
             }
         }
 

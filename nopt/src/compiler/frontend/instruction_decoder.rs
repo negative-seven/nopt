@@ -16,9 +16,7 @@ pub(super) fn decode_instruction(nes: &mut Nes, address: u16) -> (nes_assembly::
     };
 
     let opcode = next_byte();
-    let Some(operation) = nes_assembly::Operation::from_opcode(opcode) else {
-        unimplemented!("opcode {opcode:#x}");
-    };
+    let operation = nes_assembly::Operation::from_opcode(opcode);
 
     let operand = match operation.addressing_mode().len() {
         0 => 0,
