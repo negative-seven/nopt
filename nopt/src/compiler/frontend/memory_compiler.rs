@@ -33,6 +33,8 @@ pub(super) fn compile_write(basic_block: &mut BasicBlock, address: Variable16, v
     // TODO: rework without complex branchless logic
 
     let n0x800 = basic_block.define_16(0x800.into());
+    let n0x5fff = basic_block.define_16(0x5fff.into());
+    let n0x8000 = basic_block.define_16(0x8000.into());
 
     // write ram
     let ram_byte_old = basic_block.define_8(Definition8::Ram(address));
@@ -45,5 +47,22 @@ pub(super) fn compile_write(basic_block: &mut BasicBlock, address: Variable16, v
     basic_block.instructions.push(Instruction::Store8 {
         destination: Destination8::Ram(address),
         variable: ram_byte_new,
+    });
+
+    // write prg ram
+    let prg_ram_byte_old = basic_block.define_8(Definition8::PrgRam(address));
+    let prg_ram_condition = {
+        let condition_a = basic_block.define_1(Definition1::LessThan16(address, n0x8000));
+        let condition_b = basic_block.define_1(Definition1::LessThan16(n0x5fff, address));
+        basic_block.define_1(condition_a & condition_b)
+    };
+    let prg_ram_byte_new = basic_block.define_8(Definition8::Select {
+        condition: prg_ram_condition,
+        result_if_true: value,
+        result_if_false: prg_ram_byte_old,
+    });
+    basic_block.instructions.push(Instruction::Store8 {
+        destination: Destination8::PrgRam(address),
+        variable: prg_ram_byte_new,
     });
 }

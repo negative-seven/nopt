@@ -134,6 +134,7 @@ pub(super) enum Definition1 {
     Immediate(bool),
     CpuFlag(CpuFlag),
     Not(Variable1),
+    And(Variable1, Variable1),
     EqualToZero(Variable8),
     Negative(Variable8),
     U8Bit {
@@ -183,12 +184,21 @@ impl Not for Variable1 {
     }
 }
 
+impl BitAnd for Variable1 {
+    type Output = Definition1;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self::Output::And(self, rhs)
+    }
+}
+
 impl Debug for Definition1 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Immediate(immediate) => write!(f, "{}", u8::from(*immediate)),
             Self::CpuFlag(flag) => write!(f, "{flag:?}"),
             Self::Not(register_u1) => write!(f, "!{register_u1:?}"),
+            Self::And(operand_0, operand_1) => write!(f, "({operand_0:?} & {operand_1:?})"),
             Self::EqualToZero(u8) => write!(f, "({u8:?} == 0)"),
             Self::Negative(u8) => write!(f, "({u8:?} >= 0x80)"),
             Self::U8Bit { operand, index } => write!(f, "{operand:?}.bit({index})"),
@@ -285,6 +295,7 @@ pub(super) enum Definition8 {
     Immediate(u8),
     CpuRegister(CpuRegister),
     Ram(Variable16),
+    PrgRam(Variable16),
     Rom(Variable16),
     LowByte(Variable16),
     HighByte(Variable16),
@@ -358,6 +369,7 @@ impl Debug for Definition8 {
             Self::Immediate(immediate) => write!(f, "0x{immediate:02x}"),
             Self::CpuRegister(cpu_register) => write!(f, "{cpu_register:?}"),
             Self::Ram(variable) => write!(f, "ram[{variable:?}]"),
+            Self::PrgRam(variable) => write!(f, "prg_ram[{variable:?}]"),
             Self::Rom(variable) => write!(f, "rom[{variable:?}]"),
             Self::LowByte(variable) => write!(f, "<{variable:?}"),
             Self::HighByte(variable) => write!(f, ">{variable:?}"),
@@ -398,6 +410,7 @@ impl Debug for Definition8 {
 pub(super) enum Destination8 {
     CpuRegister(CpuRegister),
     Ram(Variable16),
+    PrgRam(Variable16),
 }
 
 impl From<CpuRegister> for Destination8 {
@@ -411,6 +424,7 @@ impl Debug for Destination8 {
         match self {
             Self::CpuRegister(u8) => write!(f, "{u8:?}"),
             Self::Ram(variable) => write!(f, "ram[{variable:?}]"),
+            Self::PrgRam(variable) => write!(f, "prg_ram[{variable:?}]"),
         }
     }
 }

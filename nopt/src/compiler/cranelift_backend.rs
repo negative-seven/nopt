@@ -58,6 +58,9 @@ impl CraneliftBackend {
         let nes_cpu_ram_address = function_builder.ins().iconst(isa.pointer_type(), unsafe {
             (*nes).cpu.ram.as_ptr() as i64
         });
+        let nes_prg_ram_address = function_builder.ins().iconst(isa.pointer_type(), unsafe {
+            (*nes).prg_ram.as_ptr() as i64
+        });
         let nes_cpu_prg_rom_address = function_builder.ins().iconst(isa.pointer_type(), unsafe {
             (*nes).rom.prg_rom().as_ptr() as i64
         });
@@ -105,6 +108,9 @@ impl CraneliftBackend {
                         ir::Definition1::Not(variable) => {
                             function_builder.ins().bxor_imm(self.value_1(variable), 1)
                         }
+                        ir::Definition1::And(variable_0, variable_1) => function_builder
+                            .ins()
+                            .band(self.value_1(variable_0), self.value_1(variable_1)),
                         ir::Definition1::EqualToZero(variable) => {
                             function_builder
                                 .ins()
@@ -233,6 +239,19 @@ impl CraneliftBackend {
                             let address = function_builder
                                 .ins()
                                 .uadd_overflow(nes_cpu_ram_address, index)
+                                .0;
+                            function_builder
+                                .ins()
+                                .load(type_u8, MemFlags::new(), address, 0)
+                        }
+                        ir::Definition8::PrgRam(variable) => {
+                            let cpu_address = function_builder
+                                .ins()
+                                .uextend(isa.pointer_type(), self.value_16(variable));
+                            let index = function_builder.ins().band_imm(cpu_address, 0x1fff);
+                            let address = function_builder
+                                .ins()
+                                .uadd_overflow(nes_prg_ram_address, index)
                                 .0;
                             function_builder
                                 .ins()
@@ -422,6 +441,19 @@ impl CraneliftBackend {
                             .uextend(isa.pointer_type(), self.value_16(address));
                         let index = function_builder.ins().band_imm(address, 0x7ff);
                         let address = function_builder.ins().iadd(nes_cpu_ram_address, index);
+                        function_builder.ins().store(
+                            MemFlags::new(),
+                            self.value_8(variable),
+                            address,
+                            0,
+                        );
+                    }
+                    ir::Destination8::PrgRam(address) => {
+                        let address = function_builder
+                            .ins()
+                            .uextend(isa.pointer_type(), self.value_16(address));
+                        let index = function_builder.ins().band_imm(address, 0x1fff);
+                        let address = function_builder.ins().iadd(nes_prg_ram_address, index);
                         function_builder.ins().store(
                             MemFlags::new(),
                             self.value_8(variable),

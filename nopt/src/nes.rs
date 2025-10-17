@@ -2,6 +2,7 @@ use crate::Rom;
 
 pub struct Nes {
     pub rom: Rom,
+    pub prg_ram: [u8; 0x2000],
     pub cpu: Cpu,
 }
 
@@ -14,6 +15,7 @@ impl Nes {
         );
         Self {
             rom,
+            prg_ram: [0; 0x2000],
             cpu: Cpu::new(cpu_pc),
         }
     }
@@ -21,7 +23,8 @@ impl Nes {
     pub fn peek(&self, address: u16) -> u8 {
         match address {
             0..0x2000 => self.cpu.ram[usize::from(address) & 0x7ff],
-            0x2000..0x8000 => unimplemented!("peek 0x{address:04x}"),
+            0x2000..0x6000 => unimplemented!("peek 0x{address:04x}"),
+            0x6000..0x8000 => self.prg_ram[usize::from(address) & 0x1fff],
             0x8000..=0xffff => {
                 self.rom.prg_rom()[usize::from(address) & (self.rom.prg_rom().len() - 1)]
             }
