@@ -445,10 +445,11 @@ impl InstructionCompiler {
                 self.push_u8(value);
             }
             nes_assembly::Mnemonic::Php => {
-                let set_b_mask = self.define_8(1 << CpuFlag::B.index());
+                let set_flags_mask =
+                    self.define_8((1 << CpuFlag::Unused.index()) | (1 << CpuFlag::B.index()));
 
                 let value = self.define_8(CpuRegister::P);
-                let value = self.define_8(value | set_b_mask);
+                let value = self.define_8(value | set_flags_mask);
 
                 self.push_u8(value);
             }
