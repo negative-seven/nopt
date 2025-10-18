@@ -67,7 +67,7 @@ impl Compiler {
                 } => trace!("ir: {destination:?} = {variable:?}"),
             }
         }
-        trace!("ir: jump to {:?}", basic_block.jump_target);
+        trace!("ir: {:?}", basic_block.jump);
     }
 }
 

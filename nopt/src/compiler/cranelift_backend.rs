@@ -513,13 +513,17 @@ impl Compiler {
             }
         }
 
-        function_builder.ins().store(
-            MemFlags::new(),
-            self.value_16(ir.jump_target),
-            nes_cpu_pc_address,
-            0,
-        );
-        function_builder.ins().return_(&[]);
+        match ir.jump {
+            ir::Jump::CpuAddress(cpu_address) => {
+                function_builder.ins().store(
+                    MemFlags::new(),
+                    self.value_16(cpu_address),
+                    nes_cpu_pc_address,
+                    0,
+                );
+                function_builder.ins().return_(&[]);
+            }
+        }
     }
 
     fn value_1(&mut self, variable: ir::Variable1) -> Value {

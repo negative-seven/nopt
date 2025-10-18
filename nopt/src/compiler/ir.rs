@@ -9,14 +9,14 @@ pub(super) struct Function {
 
 pub(super) struct BasicBlock {
     pub instructions: Vec<Instruction>,
-    pub jump_target: Variable16,
+    pub jump: Jump,
 }
 
 impl BasicBlock {
     pub(super) fn new() -> Self {
         Self {
             instructions: vec![],
-            jump_target: Variable16 { id: usize::MAX }, // TODO: don't use dummy value for id
+            jump: Jump::CpuAddress(Variable16 { id: usize::MAX }), // TODO: don't use dummy variable
         }
     }
 
@@ -75,6 +75,18 @@ pub(super) enum Instruction {
         destination: Destination8,
         variable: Variable8,
     },
+}
+
+pub(crate) enum Jump {
+    CpuAddress(Variable16),
+}
+
+impl Debug for Jump {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::CpuAddress(cpu_address) => write!(f, "jump to {cpu_address:?}"),
+        }
+    }
 }
 
 #[derive(Clone)]
