@@ -1,6 +1,5 @@
-use tracing::trace;
-
 use crate::{nes::Nes, nes_assembly};
+use tracing::trace;
 
 pub(super) fn decode_instruction(nes: &mut Nes, address: u16) -> (nes_assembly::Instruction, bool) {
     let mut next_byte_address = address;

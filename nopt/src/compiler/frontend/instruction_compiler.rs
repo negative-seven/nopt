@@ -1,5 +1,3 @@
-use tracing::warn;
-
 use crate::{
     compiler::{
         frontend::memory_compiler,
@@ -10,6 +8,7 @@ use crate::{
     },
     nes_assembly,
 };
+use tracing::warn;
 
 pub(super) fn compile(instruction: nes_assembly::Instruction) -> Function {
     let basic_block = InstructionCompiler {
