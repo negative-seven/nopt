@@ -170,16 +170,24 @@ impl InstructionCompiler {
             }
             nes_assembly::Mnemonic::Brk => {
                 let r#true = self.define_1(true);
+                let n2 = self.define_16(2);
 
                 let pc = self.define_16(Definition16::Pc);
-                let irq_handler = self.define_16(0xfffe);
+                let pc_plus_two = self.define_16(Definition16::Sum {
+                    operand_0: pc,
+                    operand_1: n2,
+                });
+                let irq_handler_address = self.define_16(0xfffe);
+                let irq_handler = self.read_u16_deref(irq_handler_address);
 
-                self.store_1(CpuFlag::I, r#true);
+                self.store_1(CpuFlag::Unused, r#true);
+                self.store_1(CpuFlag::B, r#true);
 
                 let p = self.define_8(CpuRegister::P);
 
+                self.store_1(CpuFlag::I, r#true);
+                self.push_u16(pc_plus_two);
                 self.push_u8(p);
-                self.push_u16(pc);
                 self.jump(irq_handler);
             }
             nes_assembly::Mnemonic::Bvc => {
