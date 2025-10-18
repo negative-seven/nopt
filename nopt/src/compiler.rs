@@ -19,8 +19,31 @@ impl Compiler {
 
     pub(crate) fn compile(&self, nes: &mut Nes) -> (Mmap, bool) {
         let (ir, is_prg_rom_only) = frontend::compile_instruction(nes, nes.cpu.pc);
+        Self::trace_ir_function(&ir);
 
-        for instruction in &ir.basic_block.instructions {
+        let bytes = cranelift_backend::compile(ir, nes, self.optimize);
+
+        let mut decoder = iced_x86::Decoder::new(64, &bytes, iced_x86::DecoderOptions::NONE);
+        decoder.set_ip(bytes.as_ptr() as u64);
+        let mut formatter = iced_x86::IntelFormatter::with_options(
+            Some(Box::new(NesStateSymbolResolver::new(nes))),
+            None,
+        );
+        for instruction in decoder {
+            let mut formatted_instruction = String::new();
+            formatter.format(&instruction, &mut formatted_instruction);
+            trace!("native: {formatted_instruction}");
+        }
+
+        (bytes, is_prg_rom_only)
+    }
+
+    fn trace_ir_function(function: &ir::Function) {
+        Self::trace_ir_basic_block(&function.basic_block);
+    }
+
+    fn trace_ir_basic_block(basic_block: &ir::BasicBlock) {
+        for instruction in &basic_block.instructions {
             match instruction {
                 ir::Instruction::Define1 {
                     variable,
@@ -44,23 +67,7 @@ impl Compiler {
                 } => trace!("ir: {destination:?} = {variable:?}"),
             }
         }
-        trace!("ir: jump to {:?}", ir.basic_block.jump_target);
-
-        let bytes = cranelift_backend::compile(ir, nes, self.optimize);
-
-        let mut decoder = iced_x86::Decoder::new(64, &bytes, iced_x86::DecoderOptions::NONE);
-        decoder.set_ip(bytes.as_ptr() as u64);
-        let mut formatter = iced_x86::IntelFormatter::with_options(
-            Some(Box::new(NesStateSymbolResolver::new(nes))),
-            None,
-        );
-        for instruction in decoder {
-            let mut formatted_instruction = String::new();
-            formatter.format(&instruction, &mut formatted_instruction);
-            trace!("native: {formatted_instruction}");
-        }
-
-        (bytes, is_prg_rom_only)
+        trace!("ir: jump to {:?}", basic_block.jump_target);
     }
 }
 
