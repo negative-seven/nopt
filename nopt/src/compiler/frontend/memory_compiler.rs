@@ -10,7 +10,9 @@ pub(super) fn compile_read(
 ) -> Variable8 {
     let r#true = basic_block.borrow_mut().define_1(true.into());
     let n0x800 = basic_block.borrow_mut().define_16(0x800.into());
+    let n0x5fff = basic_block.borrow_mut().define_16(0x5fff.into());
     let n0x7fff = basic_block.borrow_mut().define_16(0x7fff.into());
+    let n0x8000 = basic_block.borrow_mut().define_16(0x8000.into());
 
     let variable_counter = Rc::clone(&basic_block.borrow().variable_id_counter);
 
@@ -42,8 +44,40 @@ pub(super) fn compile_read(
         target_if_false_argument: None,
     };
 
+    // read PRG RAM
+    let is_prg_ram_condition = {
+        let condition_a = is_not_ram_block
+            .borrow_mut()
+            .define_1(Definition1::LessThan16(address, n0x8000));
+        let condition_b = is_not_ram_block
+            .borrow_mut()
+            .define_1(Definition1::LessThan16(n0x5fff, address));
+        is_not_ram_block
+            .borrow_mut()
+            .define_1(condition_a & condition_b)
+    };
+    let is_prg_ram_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(&variable_counter))));
+    let prg_ram_value = is_prg_ram_block
+        .borrow_mut()
+        .define_8(Definition8::PrgRam(address));
+    is_prg_ram_block.borrow_mut().jump = Jump::BasicBlock {
+        condition: is_prg_ram_condition,
+        target_if_true: Rc::clone(&last_block),
+        target_if_true_argument: Some(prg_ram_value),
+        target_if_false: Rc::clone(&last_block),
+        target_if_false_argument: Some(prg_ram_value),
+    };
+    let is_not_prg_ram_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(&variable_counter))));
+    is_not_ram_block.borrow_mut().jump = Jump::BasicBlock {
+        condition: is_prg_ram_condition,
+        target_if_true: is_prg_ram_block,
+        target_if_true_argument: None,
+        target_if_false: Rc::clone(&is_not_prg_ram_block),
+        target_if_false_argument: None,
+    };
+
     // read ROM
-    let is_rom_condition = is_not_ram_block
+    let is_rom_condition = is_not_prg_ram_block
         .borrow_mut()
         .define_1(Definition1::LessThan16(n0x7fff, address));
     let is_rom_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(&variable_counter))));
@@ -57,8 +91,8 @@ pub(super) fn compile_read(
         target_if_false: Rc::clone(&last_block),
         target_if_false_argument: Some(rom_value),
     };
-    let fallback_value = is_not_ram_block.borrow_mut().define_8(0.into());
-    is_not_ram_block.borrow_mut().jump = Jump::BasicBlock {
+    let fallback_value = is_not_prg_ram_block.borrow_mut().define_8(0.into());
+    is_not_prg_ram_block.borrow_mut().jump = Jump::BasicBlock {
         condition: is_rom_condition,
         target_if_true: is_rom_block,
         target_if_true_argument: None,
