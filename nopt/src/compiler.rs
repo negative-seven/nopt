@@ -58,7 +58,9 @@ impl Compiler {
                 ir::Jump::BasicBlock {
                     condition: _,
                     target_if_true,
+                    target_if_true_argument: _,
                     target_if_false,
+                    target_if_false_argument: _,
                 } => {
                     trace_ir_basic_block_recursively(target_if_true, visited);
                     trace_ir_basic_block_recursively(target_if_false, visited);

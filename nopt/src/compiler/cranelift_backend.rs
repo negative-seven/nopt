@@ -97,13 +97,18 @@ impl Compiler {
             return *block;
         }
 
+        let type_u8 = Type::int(8).unwrap();
+        let type_u16 = Type::int(16).unwrap();
+
         let block = function_builder.create_block();
+        let argument = if ir.borrow().has_argument {
+            Some(function_builder.append_block_param(block, type_u8))
+        } else {
+            None
+        };
         self.block_mapping
             .insert(PtrComparedRc(Rc::clone(ir)), block);
         function_builder.switch_to_block(block);
-
-        let type_u8 = Type::int(8).unwrap();
-        let type_u16 = Type::int(16).unwrap();
 
         let nes_cpu_ram_address = function_builder
             .ins()
@@ -284,6 +289,7 @@ impl Compiler {
                     definition,
                 } => {
                     let value = match definition {
+                        ir::Definition8::BasicBlockArgument => argument.unwrap(),
                         ir::Definition8::Immediate(immediate) => function_builder
                             .ins()
                             .iconst(type_u8, i64::from(*immediate)),
@@ -408,15 +414,6 @@ impl Compiler {
                                 .usub_overflow(result, self.value_1(*operand_borrow))
                                 .0
                         }
-                        ir::Definition8::Select {
-                            condition,
-                            result_if_true,
-                            result_if_false,
-                        } => function_builder.ins().select(
-                            self.value_1(*condition),
-                            self.value_8(*result_if_true),
-                            self.value_8(*result_if_false),
-                        ),
                     };
                     debug_assert_eq!(function_builder.func.dfg.value_type(value), type_u8);
                     self.variable_8_mapping.insert(variable.id, value);
@@ -548,7 +545,9 @@ impl Compiler {
             ir::Jump::BasicBlock {
                 condition,
                 target_if_true,
+                target_if_true_argument,
                 target_if_false,
+                target_if_false_argument,
             } => {
                 let condition = self.value_1(*condition);
 
@@ -561,9 +560,15 @@ impl Compiler {
                 function_builder.ins().brif(
                     condition,
                     target_if_true_block,
-                    [],
+                    target_if_true_argument
+                        .map(|variable| self.value_8(variable).into())
+                        .iter()
+                        .collect::<Vec<_>>(),
                     target_if_false_block,
-                    [],
+                    target_if_false_argument
+                        .map(|variable| self.value_8(variable).into())
+                        .iter()
+                        .collect::<Vec<_>>(),
                 );
             }
         }
@@ -576,6 +581,7 @@ impl Compiler {
     }
 
     fn value_8(&mut self, variable: ir::Variable8) -> Value {
+        tracing::trace!("getting variable {variable:?}");
         *self.variable_8_mapping.get(&variable.id).unwrap()
     }
 

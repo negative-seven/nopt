@@ -12,6 +12,7 @@ pub(super) struct Function {
 
 pub(super) struct BasicBlock {
     pub variable_id_counter: Rc<AtomicUsize>,
+    pub has_argument: bool,
     pub instructions: Vec<Instruction>,
     pub jump: Jump,
 }
@@ -20,9 +21,14 @@ impl BasicBlock {
     pub(super) fn new(variable_id_counter: Rc<AtomicUsize>) -> Self {
         Self {
             variable_id_counter,
+            has_argument: false,
             instructions: vec![],
             jump: Jump::CpuAddress(Variable16 { id: usize::MAX }), // TODO: don't use dummy variable
         }
+    }
+
+    pub(super) fn set_has_argument(&mut self, has_argument: bool) {
+        self.has_argument = has_argument;
     }
 
     pub(super) fn define_1(&mut self, definition: Definition1) -> Variable1 {
@@ -87,7 +93,9 @@ pub(crate) enum Jump {
     BasicBlock {
         condition: Variable1,
         target_if_true: Rc<RefCell<BasicBlock>>,
+        target_if_true_argument: Option<Variable8>,
         target_if_false: Rc<RefCell<BasicBlock>>,
+        target_if_false_argument: Option<Variable8>,
     },
     CpuAddress(Variable16),
 }
@@ -99,7 +107,9 @@ impl Debug for Jump {
             Self::BasicBlock {
                 condition,
                 target_if_true: _,
+                target_if_true_argument: _,
                 target_if_false: _,
+                target_if_false_argument: _,
             } => {
                 write!(
                     f,
@@ -325,6 +335,7 @@ impl Debug for CpuRegister {
 
 #[derive(Clone)]
 pub(super) enum Definition8 {
+    BasicBlockArgument,
     Immediate(u8),
     CpuRegister(CpuRegister),
     Ram(Variable16),
@@ -352,11 +363,6 @@ pub(super) enum Definition8 {
         operand_0: Variable8,
         operand_1: Variable8,
         operand_borrow: Variable1,
-    },
-    Select {
-        condition: Variable1,
-        result_if_true: Variable8,
-        result_if_false: Variable8,
     },
 }
 
@@ -399,6 +405,7 @@ impl BitXor for Variable8 {
 impl Debug for Definition8 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::BasicBlockArgument => write!(f, "arg"),
             Self::Immediate(immediate) => write!(f, "0x{immediate:02x}"),
             Self::CpuRegister(cpu_register) => write!(f, "{cpu_register:?}"),
             Self::Ram(variable) => write!(f, "ram[{variable:?}]"),
@@ -427,14 +434,6 @@ impl Debug for Definition8 {
                 operand_1,
                 operand_borrow,
             } => write!(f, "({operand_0:?} - {operand_1:?} - {operand_borrow:?})"),
-            Self::Select {
-                condition,
-                result_if_true,
-                result_if_false,
-            } => write!(
-                f,
-                "(if {condition:?} then {result_if_true:?} else {result_if_false:?})"
-            ),
         }
     }
 }
