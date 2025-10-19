@@ -5,7 +5,11 @@ mod ir;
 use crate::nes::Nes;
 use iced_x86::Formatter as _;
 use memmap2::Mmap;
-use std::collections::HashMap;
+use std::{
+    cell::RefCell,
+    collections::{HashMap, HashSet},
+    rc::Rc,
+};
 use tracing::trace;
 
 pub(crate) struct Compiler {
@@ -39,11 +43,36 @@ impl Compiler {
     }
 
     fn trace_ir_function(function: &ir::Function) {
-        Self::trace_ir_basic_block(&function.basic_block);
+        fn trace_ir_basic_block_recursively(
+            basic_block: &Rc<RefCell<ir::BasicBlock>>,
+            visited: &mut HashSet<*mut ir::BasicBlock>,
+        ) {
+            if visited.contains(&basic_block.as_ptr()) {
+                return;
+            }
+            visited.insert(basic_block.as_ptr());
+
+            Compiler::trace_ir_basic_block(basic_block);
+
+            match &basic_block.borrow().jump {
+                ir::Jump::BasicBlock {
+                    condition: _,
+                    target_if_true,
+                    target_if_false,
+                } => {
+                    trace_ir_basic_block_recursively(target_if_true, visited);
+                    trace_ir_basic_block_recursively(target_if_false, visited);
+                }
+                ir::Jump::CpuAddress(_) => {}
+            }
+        }
+
+        trace_ir_basic_block_recursively(&function.basic_block, &mut HashSet::new());
     }
 
-    fn trace_ir_basic_block(basic_block: &ir::BasicBlock) {
-        for instruction in &basic_block.instructions {
+    fn trace_ir_basic_block(basic_block: &Rc<RefCell<ir::BasicBlock>>) {
+        trace!("ir: block start");
+        for instruction in &basic_block.borrow().instructions {
             match instruction {
                 ir::Instruction::Define1 {
                     variable,
@@ -67,7 +96,7 @@ impl Compiler {
                 } => trace!("ir: {destination:?} = {variable:?}"),
             }
         }
-        trace!("ir: {:?}", basic_block.jump);
+        trace!("ir: {:?}", basic_block.borrow().jump);
     }
 }
 

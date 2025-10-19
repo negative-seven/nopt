@@ -8,11 +8,27 @@ use cranelift_codegen::{
 };
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
 use memmap2::Mmap;
-use std::{collections::HashMap, sync::Arc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc, sync::Arc};
 use target_lexicon::Triple;
 
 pub(super) fn compile(ir: &ir::Function, nes: *mut Nes, optimize: bool) -> Mmap {
     Compiler::new(optimize, nes).compile(ir)
+}
+
+struct PtrComparedRc<T>(Rc<T>);
+
+impl<T> Eq for PtrComparedRc<T> {}
+
+impl<T> PartialEq for PtrComparedRc<T> {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl<T> std::hash::Hash for PtrComparedRc<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        Rc::as_ptr(&self.0).hash(state);
+    }
 }
 
 struct Compiler {
@@ -21,6 +37,7 @@ struct Compiler {
     variable_1_mapping: HashMap<usize, Value>,
     variable_8_mapping: HashMap<usize, Value>,
     variable_16_mapping: HashMap<usize, Value>,
+    block_mapping: HashMap<PtrComparedRc<RefCell<ir::BasicBlock>>, Block>,
 }
 
 impl Compiler {
@@ -41,6 +58,7 @@ impl Compiler {
             variable_1_mapping: HashMap::new(),
             variable_8_mapping: HashMap::new(),
             variable_16_mapping: HashMap::new(),
+            block_mapping: HashMap::new(),
         }
     }
 
@@ -50,8 +68,7 @@ impl Compiler {
         let mut function_builder =
             FunctionBuilder::new(&mut function, &mut function_builder_context);
 
-        let block = function_builder.create_block();
-        self.compile_block(&mut function_builder, block, &ir.basic_block);
+        self.get_or_compile_block(&mut function_builder, &ir.basic_block);
 
         function_builder.finalize();
 
@@ -71,17 +88,22 @@ impl Compiler {
     }
 
     #[expect(clippy::too_many_lines)]
-    fn compile_block(
+    fn get_or_compile_block(
         &mut self,
         function_builder: &mut FunctionBuilder,
-        block: Block,
-        ir: &ir::BasicBlock,
-    ) {
+        ir: &Rc<RefCell<ir::BasicBlock>>,
+    ) -> Block {
+        if let Some(block) = self.block_mapping.get(&PtrComparedRc(Rc::clone(ir))) {
+            return *block;
+        }
+
+        let block = function_builder.create_block();
+        self.block_mapping
+            .insert(PtrComparedRc(Rc::clone(ir)), block);
+        function_builder.switch_to_block(block);
+
         let type_u8 = Type::int(8).unwrap();
         let type_u16 = Type::int(16).unwrap();
-
-        function_builder.seal_block(block);
-        function_builder.switch_to_block(block);
 
         let nes_cpu_ram_address = function_builder
             .ins()
@@ -129,7 +151,7 @@ impl Compiler {
                 &raw mut (*self.nes).cpu.pc as i64
             });
 
-        for instruction in &ir.instructions {
+        for instruction in &ir.borrow().instructions {
             match instruction {
                 ir::Instruction::Define1 {
                     variable,
@@ -513,17 +535,40 @@ impl Compiler {
             }
         }
 
-        match ir.jump {
+        match &ir.borrow().jump {
             ir::Jump::CpuAddress(cpu_address) => {
                 function_builder.ins().store(
                     MemFlags::new(),
-                    self.value_16(cpu_address),
+                    self.value_16(*cpu_address),
                     nes_cpu_pc_address,
                     0,
                 );
                 function_builder.ins().return_(&[]);
             }
+            ir::Jump::BasicBlock {
+                condition,
+                target_if_true,
+                target_if_false,
+            } => {
+                let condition = self.value_1(*condition);
+
+                let target_if_true_block =
+                    self.get_or_compile_block(function_builder, target_if_true);
+                let target_if_false_block =
+                    self.get_or_compile_block(function_builder, target_if_false);
+
+                function_builder.switch_to_block(block);
+                function_builder.ins().brif(
+                    condition,
+                    target_if_true_block,
+                    [],
+                    target_if_false_block,
+                    [],
+                );
+            }
         }
+
+        block
     }
 
     fn value_1(&mut self, variable: ir::Variable1) -> Value {

@@ -1,20 +1,25 @@
 use std::{
+    cell::RefCell,
     fmt::Debug,
     ops::{BitAnd, BitOr, BitXor, Not, Rem},
+    rc::Rc,
+    sync::atomic::{AtomicUsize, Ordering},
 };
 
 pub(super) struct Function {
-    pub basic_block: BasicBlock,
+    pub basic_block: Rc<RefCell<BasicBlock>>,
 }
 
 pub(super) struct BasicBlock {
+    pub variable_id_counter: Rc<AtomicUsize>,
     pub instructions: Vec<Instruction>,
     pub jump: Jump,
 }
 
 impl BasicBlock {
-    pub(super) fn new() -> Self {
+    pub(super) fn new(variable_id_counter: Rc<AtomicUsize>) -> Self {
         Self {
+            variable_id_counter,
             instructions: vec![],
             jump: Jump::CpuAddress(Variable16 { id: usize::MAX }), // TODO: don't use dummy variable
         }
@@ -22,7 +27,7 @@ impl BasicBlock {
 
     pub(super) fn define_1(&mut self, definition: Definition1) -> Variable1 {
         let variable = Variable1 {
-            id: self.instructions.len(),
+            id: self.variable_id_counter.fetch_add(1, Ordering::Relaxed),
         };
         self.instructions.push(Instruction::Define1 {
             variable,
@@ -33,7 +38,7 @@ impl BasicBlock {
 
     pub(super) fn define_8(&mut self, definition: Definition8) -> Variable8 {
         let variable = Variable8 {
-            id: self.instructions.len(),
+            id: self.variable_id_counter.fetch_add(1, Ordering::Relaxed),
         };
         self.instructions.push(Instruction::Define8 {
             variable,
@@ -44,7 +49,7 @@ impl BasicBlock {
 
     pub(super) fn define_16(&mut self, definition: Definition16) -> Variable16 {
         let variable = Variable16 {
-            id: self.instructions.len(),
+            id: self.variable_id_counter.fetch_add(1, Ordering::Relaxed),
         };
         self.instructions.push(Instruction::Define16 {
             variable,
@@ -77,7 +82,13 @@ pub(super) enum Instruction {
     },
 }
 
+#[derive(Clone)]
 pub(crate) enum Jump {
+    BasicBlock {
+        condition: Variable1,
+        target_if_true: Rc<RefCell<BasicBlock>>,
+        target_if_false: Rc<RefCell<BasicBlock>>,
+    },
     CpuAddress(Variable16),
 }
 
@@ -85,6 +96,16 @@ impl Debug for Jump {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::CpuAddress(cpu_address) => write!(f, "jump to {cpu_address:?}"),
+            Self::BasicBlock {
+                condition,
+                target_if_true: _,
+                target_if_false: _,
+            } => {
+                write!(
+                    f,
+                    "jump to (if {condition:?} basic block TODO else basic block TODO)"
+                )
+            }
         }
     }
 }

@@ -8,12 +8,14 @@ use crate::{
     },
     nes_assembly,
 };
+use std::{cell::RefCell, rc::Rc, sync::atomic::AtomicUsize};
 use tracing::warn;
 
 pub(super) fn compile(instruction: nes_assembly::Instruction) -> Function {
-    let basic_block = InstructionCompiler {
+    let basic_block = Rc::new(RefCell::new(BasicBlock::new(Rc::new(AtomicUsize::new(0)))));
+    InstructionCompiler {
         cpu_instruction: instruction,
-        basic_block: BasicBlock::new(),
+        basic_block: Rc::clone(&basic_block),
     }
     .transpile();
     Function { basic_block }
@@ -21,13 +23,13 @@ pub(super) fn compile(instruction: nes_assembly::Instruction) -> Function {
 
 struct InstructionCompiler {
     cpu_instruction: nes_assembly::Instruction,
-    basic_block: BasicBlock,
+    basic_block: Rc<RefCell<BasicBlock>>,
 }
 
 impl InstructionCompiler {
     #[expect(clippy::too_many_lines)]
-    pub(crate) fn transpile(mut self) -> BasicBlock {
-        self.basic_block.jump =
+    pub(crate) fn transpile(mut self) {
+        self.basic_block.borrow_mut().jump =
             Jump::CpuAddress(self.define_16(self.cpu_instruction.address_end()));
 
         match self.cpu_instruction.operation().mnemonic() {
@@ -615,20 +617,18 @@ impl InstructionCompiler {
                 warn!("compiling unimplemented instruction");
             }
         }
-
-        self.basic_block
     }
 
     fn define_1(&mut self, definition: impl Into<Definition1>) -> Variable1 {
-        self.basic_block.define_1(definition.into())
+        self.basic_block.borrow_mut().define_1(definition.into())
     }
 
     fn define_8(&mut self, definition: impl Into<Definition8>) -> Variable8 {
-        self.basic_block.define_8(definition.into())
+        self.basic_block.borrow_mut().define_8(definition.into())
     }
 
     fn define_16(&mut self, definition: impl Into<Definition16>) -> Variable16 {
-        self.basic_block.define_16(definition.into())
+        self.basic_block.borrow_mut().define_16(definition.into())
     }
 
     fn read_u16_deref(&mut self, cpu_address: Variable16) -> Variable16 {
@@ -654,17 +654,23 @@ impl InstructionCompiler {
     }
 
     fn store_1(&mut self, destination: impl Into<Destination1>, register: Variable1) {
-        self.basic_block.instructions.push(Instruction::Store1 {
-            variable: register,
-            destination: destination.into(),
-        });
+        self.basic_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store1 {
+                variable: register,
+                destination: destination.into(),
+            });
     }
 
     fn store_8(&mut self, destination: impl Into<Destination8>, register: Variable8) {
-        self.basic_block.instructions.push(Instruction::Store8 {
-            variable: register,
-            destination: destination.into(),
-        });
+        self.basic_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store8 {
+                variable: register,
+                destination: destination.into(),
+            });
     }
 
     fn set_nz(&mut self, value: Variable8) {
@@ -676,7 +682,7 @@ impl InstructionCompiler {
     }
 
     fn jump_to_cpu_address(&mut self, cpu_address: Variable16) {
-        self.basic_block.jump = Jump::CpuAddress(cpu_address);
+        self.basic_block.borrow_mut().jump = Jump::CpuAddress(cpu_address);
     }
 
     fn push_u8(&mut self, value: Variable8) {
