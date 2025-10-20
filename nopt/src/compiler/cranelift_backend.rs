@@ -8,7 +8,12 @@ use cranelift_codegen::{
 };
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
 use memmap2::Mmap;
-use std::{cell::RefCell, collections::HashMap, rc::Rc, sync::Arc};
+use std::{
+    cell::RefCell,
+    collections::{HashMap, hash_map},
+    rc::Rc,
+    sync::Arc,
+};
 use target_lexicon::Triple;
 
 pub(super) fn compile(ir: &ir::Function, nes: *mut Nes, optimize: bool) -> Mmap {
@@ -68,8 +73,10 @@ impl Compiler {
         let mut function_builder =
             FunctionBuilder::new(&mut function, &mut function_builder_context);
 
-        self.get_or_compile_block(&mut function_builder, &ir.basic_block);
+        let entry_block = function_builder.create_block();
+        self.compile_block(&mut function_builder, entry_block, &ir.basic_block);
 
+        function_builder.seal_all_blocks();
         function_builder.finalize();
 
         let mut context = Context::for_function(function);
@@ -88,26 +95,21 @@ impl Compiler {
     }
 
     #[expect(clippy::too_many_lines)]
-    fn get_or_compile_block(
+    fn compile_block(
         &mut self,
         function_builder: &mut FunctionBuilder,
+        block: Block,
         ir: &Rc<RefCell<ir::BasicBlock>>,
-    ) -> Block {
-        if let Some(block) = self.block_mapping.get(&PtrComparedRc(Rc::clone(ir))) {
-            return *block;
-        }
-
+    ) {
         let type_u8 = Type::int(8).unwrap();
         let type_u16 = Type::int(16).unwrap();
 
-        let block = function_builder.create_block();
         let argument = if ir.borrow().has_argument {
             Some(function_builder.append_block_param(block, type_u8))
         } else {
             None
         };
-        self.block_mapping
-            .insert(PtrComparedRc(Rc::clone(ir)), block);
+
         function_builder.switch_to_block(block);
 
         let nes_cpu_ram_address = function_builder
@@ -551,12 +553,33 @@ impl Compiler {
             } => {
                 let condition = self.value_1(*condition);
 
-                let target_if_true_block =
-                    self.get_or_compile_block(function_builder, target_if_true);
-                let target_if_false_block =
-                    self.get_or_compile_block(function_builder, target_if_false);
+                let mut blocks_to_compile = vec![];
 
-                function_builder.switch_to_block(block);
+                let target_if_true_block = match self
+                    .block_mapping
+                    .entry(PtrComparedRc(Rc::clone(target_if_true)))
+                {
+                    hash_map::Entry::Occupied(occupied) => *occupied.get(),
+                    hash_map::Entry::Vacant(vacant) => {
+                        let block = function_builder.create_block();
+                        blocks_to_compile.push((block, target_if_true));
+                        vacant.insert(block);
+                        block
+                    }
+                };
+                let target_if_false_block = match self
+                    .block_mapping
+                    .entry(PtrComparedRc(Rc::clone(target_if_false)))
+                {
+                    hash_map::Entry::Occupied(occupied) => *occupied.get(),
+                    hash_map::Entry::Vacant(vacant) => {
+                        let block = function_builder.create_block();
+                        blocks_to_compile.push((block, target_if_false));
+                        vacant.insert(block);
+                        block
+                    }
+                };
+
                 function_builder.ins().brif(
                     condition,
                     target_if_true_block,
@@ -570,10 +593,12 @@ impl Compiler {
                         .iter()
                         .collect::<Vec<_>>(),
                 );
+
+                for (block, ir) in blocks_to_compile {
+                    self.compile_block(function_builder, block, ir);
+                }
             }
         }
-
-        block
     }
 
     fn value_1(&mut self, variable: ir::Variable1) -> Value {
