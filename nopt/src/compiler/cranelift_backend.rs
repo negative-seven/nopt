@@ -209,6 +209,13 @@ impl Compiler {
                                 self.value_16(*operand_1),
                             )
                         }
+                        ir::Definition1::LessThanOrEqual16(operand_0, operand_1) => {
+                            function_builder.ins().icmp(
+                                IntCC::UnsignedLessThanOrEqual,
+                                self.value_16(*operand_0),
+                                self.value_16(*operand_1),
+                            )
+                        }
                         ir::Definition1::SumCarry {
                             operand_0,
                             operand_1,
