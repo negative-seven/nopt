@@ -613,7 +613,6 @@ impl Compiler {
     }
 
     fn value_8(&mut self, variable: ir::Variable8) -> Value {
-        tracing::trace!("getting variable {variable:?}");
         *self.variable_8_mapping.get(&variable.id).unwrap()
     }
 
