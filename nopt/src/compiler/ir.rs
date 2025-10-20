@@ -184,7 +184,6 @@ pub(super) enum Definition1 {
         operand: Variable8,
         index: u8,
     },
-    LessThan16(Variable16, Variable16),
     LessThanOrEqual16(Variable16, Variable16),
     SumCarry {
         operand_0: Variable8,
@@ -246,7 +245,6 @@ impl Debug for Definition1 {
             Self::EqualToZero(u8) => write!(f, "({u8:?} == 0)"),
             Self::Negative(u8) => write!(f, "({u8:?} >= 0x80)"),
             Self::U8Bit { operand, index } => write!(f, "{operand:?}.bit({index})"),
-            Self::LessThan16(operand_0, operand_1) => write!(f, "({operand_0:?} < {operand_1:?})"),
             Self::LessThanOrEqual16(operand_0, operand_1) => {
                 write!(f, "({operand_0:?} <= {operand_1:?})")
             }

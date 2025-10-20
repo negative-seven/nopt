@@ -202,13 +202,6 @@ impl Compiler {
                                 .ushr_imm(self.value_8(*operand), i64::from(*index));
                             function_builder.ins().band_imm(value, 0b1)
                         }
-                        ir::Definition1::LessThan16(operand_0, operand_1) => {
-                            function_builder.ins().icmp(
-                                IntCC::UnsignedLessThan,
-                                self.value_16(*operand_0),
-                                self.value_16(*operand_1),
-                            )
-                        }
                         ir::Definition1::LessThanOrEqual16(operand_0, operand_1) => {
                             function_builder.ins().icmp(
                                 IntCC::UnsignedLessThanOrEqual,
