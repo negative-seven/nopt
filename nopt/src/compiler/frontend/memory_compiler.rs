@@ -1,6 +1,6 @@
 use crate::compiler::ir::{
-    BasicBlock, Definition1, Definition8, Definition16, Destination8, Instruction, Jump, Variable8,
-    Variable16,
+    BasicBlock, Definition1, Definition8, Definition16, Destination8, Destination16, Instruction,
+    Jump, Variable8, Variable16,
 };
 use std::{cell::RefCell, ops::RangeInclusive, rc::Rc};
 
@@ -167,6 +167,16 @@ pub(super) fn compile_write(
         block.instructions.push(Instruction::Store8 {
             destination: Destination8::CpuRam(address),
             variable: value,
+        });
+    });
+    compile_write_in_range(0x2006..=0x2006, |block, _, value| {
+        let old_address = block.define_16(Definition16::PpuCurrentAddress);
+        let new_address_high = block.define_8(Definition8::LowByte(old_address));
+        let new_address_low = value;
+        let new_address = block.define_16(new_address_high % new_address_low);
+        block.instructions.push(Instruction::Store16 {
+            destination: Destination16::PpuCurrentAddress,
+            variable: new_address,
         });
     });
     compile_write_in_range(0x2007..=0x2007, |block, _, value| {

@@ -96,6 +96,10 @@ impl Compiler {
                     destination,
                     variable,
                 } => trace!("ir: {destination:?} = {variable:?}"),
+                ir::Instruction::Store16 {
+                    destination,
+                    variable,
+                } => trace!("ir: {destination:?} = {variable:?}"),
             }
         }
         trace!("ir: {:?}", basic_block.borrow().jump);

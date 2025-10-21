@@ -86,6 +86,10 @@ pub(super) enum Instruction {
         destination: Destination8,
         variable: Variable8,
     },
+    Store16 {
+        destination: Destination16,
+        variable: Variable16,
+    },
 }
 
 #[derive(Clone)]
@@ -534,6 +538,19 @@ impl Debug for Definition16 {
                 f,
                 "(if {condition:?} then {result_if_true:?} else {result_if_false:?})"
             ),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub(super) enum Destination16 {
+    PpuCurrentAddress,
+}
+
+impl Debug for Destination16 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::PpuCurrentAddress => write!(f, "ppu_current_address"),
         }
     }
 }

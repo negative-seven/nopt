@@ -1,4 +1,7 @@
-use crate::{Nes, compiler::ir};
+use crate::{
+    Nes,
+    compiler::ir::{self, Destination16},
+};
 use cranelift_codegen::{
     Context,
     control::ControlPlane,
@@ -573,6 +576,17 @@ impl Compiler {
                         );
                     }
                 },
+                ir::Instruction::Store16 {
+                    destination: Destination16::PpuCurrentAddress,
+                    variable,
+                } => {
+                    function_builder.ins().store(
+                        MemFlags::new(),
+                        self.value_16(*variable),
+                        nes_ppu_current_address_address,
+                        0,
+                    );
+                }
             }
         }
 
