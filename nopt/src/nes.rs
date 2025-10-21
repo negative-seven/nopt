@@ -4,6 +4,7 @@ pub struct Nes {
     pub rom: Rom,
     pub prg_ram: [u8; 0x2000],
     pub cpu: Cpu,
+    pub ppu: Ppu,
 }
 
 impl Nes {
@@ -17,6 +18,7 @@ impl Nes {
             rom,
             prg_ram: [0; 0x2000],
             cpu: Cpu::new(cpu_pc),
+            ppu: Ppu::new(),
         }
     }
 
@@ -53,5 +55,25 @@ impl Cpu {
             s: 0,
             pc,
         }
+    }
+}
+
+pub struct Ppu {
+    pub ram: [u8; 0x1000],
+    pub current_address: u16,
+}
+
+impl Ppu {
+    pub fn new() -> Self {
+        Self {
+            ram: [0; 0x1000],
+            current_address: 0,
+        }
+    }
+}
+
+impl Default for Ppu {
+    fn default() -> Self {
+        Self::new()
     }
 }

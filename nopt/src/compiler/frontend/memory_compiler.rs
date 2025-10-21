@@ -1,5 +1,6 @@
 use crate::compiler::ir::{
-    BasicBlock, Definition1, Definition8, Destination8, Instruction, Jump, Variable8, Variable16,
+    BasicBlock, Definition1, Definition8, Definition16, Destination8, Instruction, Jump, Variable8,
+    Variable16,
 };
 use std::{cell::RefCell, ops::RangeInclusive, rc::Rc};
 
@@ -69,7 +70,11 @@ pub(super) fn compile_read(
         };
 
     compile_read_in_range(0x0..=0x7ff, |block, address| {
-        block.define_8(Definition8::Ram(address))
+        block.define_8(Definition8::CpuRam(address))
+    });
+    compile_read_in_range(0x2007..=0x2007, |block, _| {
+        let address = block.define_16(Definition16::PpuCurrentAddress);
+        block.define_8(Definition8::PpuRam(address))
     });
     compile_read_in_range(0x6000..=0x7fff, |block, address| {
         block.define_8(Definition8::PrgRam(address))
@@ -160,7 +165,14 @@ pub(super) fn compile_write(
 
     compile_write_in_range(0x0..=0x7ff, |block, address, value| {
         block.instructions.push(Instruction::Store8 {
-            destination: Destination8::Ram(address),
+            destination: Destination8::CpuRam(address),
+            variable: value,
+        });
+    });
+    compile_write_in_range(0x2007..=0x2007, |block, _, value| {
+        let address = block.define_16(Definition16::PpuCurrentAddress);
+        block.instructions.push(Instruction::Store8 {
+            destination: Destination8::PpuRam(address),
             variable: value,
         });
     });

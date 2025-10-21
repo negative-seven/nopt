@@ -340,7 +340,8 @@ pub(super) enum Definition8 {
     BasicBlockArgument,
     Immediate(u8),
     CpuRegister(CpuRegister),
-    Ram(Variable16),
+    CpuRam(Variable16),
+    PpuRam(Variable16),
     PrgRam(Variable16),
     Rom(Variable16),
     LowByte(Variable16),
@@ -410,7 +411,8 @@ impl Debug for Definition8 {
             Self::BasicBlockArgument => write!(f, "arg"),
             Self::Immediate(immediate) => write!(f, "0x{immediate:02x}"),
             Self::CpuRegister(cpu_register) => write!(f, "{cpu_register:?}"),
-            Self::Ram(variable) => write!(f, "ram[{variable:?}]"),
+            Self::CpuRam(variable) => write!(f, "cpu_ram[{variable:?}]"),
+            Self::PpuRam(variable) => write!(f, "ppu_ram[{variable:?}]"),
             Self::PrgRam(variable) => write!(f, "prg_ram[{variable:?}]"),
             Self::Rom(variable) => write!(f, "rom[{variable:?}]"),
             Self::LowByte(variable) => write!(f, "<{variable:?}"),
@@ -443,7 +445,8 @@ impl Debug for Definition8 {
 #[derive(Clone)]
 pub(super) enum Destination8 {
     CpuRegister(CpuRegister),
-    Ram(Variable16),
+    CpuRam(Variable16),
+    PpuRam(Variable16),
     PrgRam(Variable16),
 }
 
@@ -457,7 +460,8 @@ impl Debug for Destination8 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::CpuRegister(u8) => write!(f, "{u8:?}"),
-            Self::Ram(variable) => write!(f, "ram[{variable:?}]"),
+            Self::CpuRam(variable) => write!(f, "cpu_ram[{variable:?}]"),
+            Self::PpuRam(variable) => write!(f, "ppu_ram[{variable:?}]"),
             Self::PrgRam(variable) => write!(f, "prg_ram[{variable:?}]"),
         }
     }
@@ -478,6 +482,7 @@ impl Debug for Variable16 {
 pub(super) enum Definition16 {
     Immediate(u16),
     Pc,
+    PpuCurrentAddress,
     FromU8s {
         high: Variable8,
         low: Variable8,
@@ -515,6 +520,7 @@ impl Debug for Definition16 {
         match self {
             Self::Immediate(immediate) => write!(f, "0x{immediate:04x}"),
             Self::Pc => write!(f, "pc"),
+            Self::PpuCurrentAddress => write!(f, "ppu_current_address"),
             Self::FromU8s { low, high } => write!(f, "({high:?} % {low:?})"),
             Self::Sum {
                 operand_0,
