@@ -12,6 +12,7 @@ target-lexicon = "0.13.3"
 tracing = "0.1.41"
 
 [dev-dependencies]
+regex = "1.12.2"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 
 [lints]
