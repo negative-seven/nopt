@@ -1,10 +1,9 @@
 use crate::compiler::ir::{
     BasicBlock, Definition1, Definition8, Definition16, Destination8, Destination16, Instruction,
-    Jump, Variable8, Variable16,
+    Jump, Variable1, Variable8, Variable16,
 };
 use std::{cell::RefCell, ops::RangeInclusive, rc::Rc};
 
-#[expect(clippy::too_many_lines, reason = "TODO")]
 pub(super) fn compile_read(
     current_block: &mut Rc<RefCell<BasicBlock>>,
     address: Variable16,
@@ -20,14 +19,9 @@ pub(super) fn compile_read(
     let if_address_in_range =
         |current_block: &mut Rc<RefCell<BasicBlock>>,
          address_range: RangeInclusive<u16>,
-         true_block_provider: fn(&mut BasicBlock, Variable16) -> Variable8,
+         populate_true_block: fn(&mut BasicBlock, Variable16) -> Variable8,
          false_value: Variable8|
          -> Variable8 {
-            let exit_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
-                &variable_id_counter,
-            ))));
-            exit_block.borrow_mut().set_has_argument(true);
-
             let condition = {
                 let lower_bound_condition = {
                     let start = current_block
@@ -49,42 +43,13 @@ pub(super) fn compile_read(
                     .borrow_mut()
                     .define_1(lower_bound_condition & upper_bound_condition)
             };
-            let true_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
-                &variable_id_counter,
-            ))));
-            let true_value = true_block_provider(&mut true_block.borrow_mut(), address);
-            true_block.borrow_mut().jump = Jump::BasicBlock {
-                condition: r#true,
-                target_if_true: Rc::clone(&exit_block),
-                target_if_true_argument: Some(true_value),
-                target_if_false: Rc::clone(&exit_block),
-                target_if_false_argument: Some(true_value),
-            };
 
-            let false_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
-                &variable_id_counter,
-            ))));
-            false_block.borrow_mut().jump = Jump::BasicBlock {
-                condition: r#true,
-                target_if_true: Rc::clone(&exit_block),
-                target_if_true_argument: Some(false_value),
-                target_if_false: Rc::clone(&exit_block),
-                target_if_false_argument: Some(false_value),
-            };
-
-            current_block.borrow_mut().jump = Jump::BasicBlock {
+            if_else_with_result(
+                current_block,
                 condition,
-                target_if_true: true_block,
-                target_if_true_argument: None,
-                target_if_false: false_block,
-                target_if_false_argument: None,
-            };
-
-            let result = exit_block
-                .borrow_mut()
-                .define_8(Definition8::BasicBlockArgument);
-            *current_block = exit_block;
-            result
+                |block| populate_true_block(block, address),
+                |_| false_value,
+            )
         };
 
     let value = current_block.borrow_mut().define_8(0.into());
@@ -140,22 +105,20 @@ pub(super) fn compile_write(
     ))));
     exit_block.borrow_mut().jump = current_block.borrow().jump.clone();
 
-    let mut compile_write_in_range =
-        |address_range: RangeInclusive<u16>,
-         write_block_instruction_provider: fn(&mut BasicBlock, Variable16, Variable8)| {
-            let write_condition = {
+    let mut if_address_in_range =
+        |range: RangeInclusive<u16>,
+         populate_write_block: fn(&mut BasicBlock, Variable16, Variable8)| {
+            let condition = {
                 let lower_bound_condition = {
                     let start = current_block
                         .borrow_mut()
-                        .define_16((*address_range.start()).into());
+                        .define_16((*range.start()).into());
                     current_block
                         .borrow_mut()
                         .define_1(Definition1::LessThanOrEqual16(start, address))
                 };
                 let upper_bound_condition = {
-                    let end = current_block
-                        .borrow_mut()
-                        .define_16((*address_range.end()).into());
+                    let end = current_block.borrow_mut().define_16((*range.end()).into());
                     current_block
                         .borrow_mut()
                         .define_1(Definition1::LessThanOrEqual16(address, end))
@@ -164,38 +127,22 @@ pub(super) fn compile_write(
                     .borrow_mut()
                     .define_1(lower_bound_condition & upper_bound_condition)
             };
-            let write_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
-                &variable_id_counter,
-            ))));
-            write_block_instruction_provider(&mut write_block.borrow_mut(), address, value);
-            write_block.borrow_mut().jump = Jump::BasicBlock {
-                condition: r#true,
-                target_if_true: Rc::clone(&exit_block),
-                target_if_true_argument: None,
-                target_if_false: Rc::clone(&exit_block),
-                target_if_false_argument: None,
-            };
-            let not_write_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
-                &variable_id_counter,
-            ))));
-            current_block.borrow_mut().jump = Jump::BasicBlock {
-                condition: write_condition,
-                target_if_true: Rc::clone(&write_block),
-                target_if_true_argument: None,
-                target_if_false: Rc::clone(&not_write_block),
-                target_if_false_argument: None,
-            };
 
-            *current_block = not_write_block;
+            if_else(
+                current_block,
+                condition,
+                |block| populate_write_block(block, address, value),
+                |_| {},
+            );
         };
 
-    compile_write_in_range(0x0..=0x7ff, |block, address, value| {
+    if_address_in_range(0x0..=0x7ff, |block, address, value| {
         block.instructions.push(Instruction::Store8 {
             destination: Destination8::CpuRam(address),
             variable: value,
         });
     });
-    compile_write_in_range(0x2006..=0x2006, |block, _, value| {
+    if_address_in_range(0x2006..=0x2006, |block, _, value| {
         let old_address = block.define_16(Definition16::PpuCurrentAddress);
         let new_address_high = block.define_8(Definition8::LowByte(old_address));
         let new_address_low = value;
@@ -205,14 +152,14 @@ pub(super) fn compile_write(
             variable: new_address,
         });
     });
-    compile_write_in_range(0x2007..=0x2007, |block, _, value| {
+    if_address_in_range(0x2007..=0x2007, |block, _, value| {
         let address = block.define_16(Definition16::PpuCurrentAddress);
         block.instructions.push(Instruction::Store8 {
             destination: Destination8::PpuRam(address),
             variable: value,
         });
     });
-    compile_write_in_range(0x6000..=0x7fff, |block, address, value| {
+    if_address_in_range(0x6000..=0x7fff, |block, address, value| {
         block.instructions.push(Instruction::Store8 {
             destination: Destination8::PrgRam(address),
             variable: value,
@@ -228,4 +175,80 @@ pub(super) fn compile_write(
     };
 
     *current_block = exit_block;
+}
+
+fn if_else(
+    current_block: &mut Rc<RefCell<BasicBlock>>,
+    condition: Variable1,
+    populate_true_block: impl Fn(&mut BasicBlock),
+    populate_false_block: impl Fn(&mut BasicBlock),
+) {
+    let unused_variable = current_block.borrow_mut().define_8(0.into());
+
+    if_else_with_result(
+        current_block,
+        condition,
+        |block| {
+            populate_true_block(block);
+            unused_variable
+        },
+        |block| {
+            populate_false_block(block);
+            unused_variable
+        },
+    );
+}
+
+fn if_else_with_result(
+    current_block: &mut Rc<RefCell<BasicBlock>>,
+    condition: Variable1,
+    populate_true_block: impl Fn(&mut BasicBlock) -> Variable8,
+    populate_false_block: impl Fn(&mut BasicBlock) -> Variable8,
+) -> Variable8 {
+    let r#true = current_block.borrow_mut().define_1(true.into());
+
+    let variable_id_counter = Rc::clone(&current_block.borrow().variable_id_counter);
+
+    let exit_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
+        &variable_id_counter,
+    ))));
+    exit_block.borrow_mut().set_has_argument(true);
+
+    let true_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
+        &variable_id_counter,
+    ))));
+    let true_value = populate_true_block(&mut true_block.borrow_mut());
+    true_block.borrow_mut().jump = Jump::BasicBlock {
+        condition: r#true,
+        target_if_true: Rc::clone(&exit_block),
+        target_if_true_argument: Some(true_value),
+        target_if_false: Rc::clone(&exit_block),
+        target_if_false_argument: Some(true_value),
+    };
+
+    let false_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
+        &variable_id_counter,
+    ))));
+    let false_value = populate_false_block(&mut false_block.borrow_mut());
+    false_block.borrow_mut().jump = Jump::BasicBlock {
+        condition: r#true,
+        target_if_true: Rc::clone(&exit_block),
+        target_if_true_argument: Some(false_value),
+        target_if_false: Rc::clone(&exit_block),
+        target_if_false_argument: Some(false_value),
+    };
+
+    current_block.borrow_mut().jump = Jump::BasicBlock {
+        condition,
+        target_if_true: Rc::clone(&true_block),
+        target_if_true_argument: None,
+        target_if_false: Rc::clone(&false_block),
+        target_if_false_argument: None,
+    };
+
+    let result = exit_block
+        .borrow_mut()
+        .define_8(Definition8::BasicBlockArgument);
+    *current_block = exit_block;
+    result
 }
