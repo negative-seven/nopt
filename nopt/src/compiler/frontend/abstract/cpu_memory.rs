@@ -1,5 +1,5 @@
 use crate::compiler::{
-    frontend::instruction_compiler::CompilerVisitor,
+    frontend::r#abstract::CompilerVisitor,
     ir::{
         BasicBlock, Definition1, Definition8, Definition16, Destination8, Destination16,
         Instruction, Variable8, Variable16,
@@ -7,7 +7,7 @@ use crate::compiler::{
 };
 use std::ops::RangeInclusive;
 
-pub(super) fn compile_read(visitor: &mut CompilerVisitor, address: Variable16) -> Variable8 {
+pub(super) fn read(visitor: &mut CompilerVisitor, address: Variable16) -> Variable8 {
     let if_address_in_range =
         |visitor: &mut CompilerVisitor,
          address_range: RangeInclusive<u16>,
@@ -63,7 +63,7 @@ pub(super) fn compile_read(visitor: &mut CompilerVisitor, address: Variable16) -
     )
 }
 
-pub(super) fn compile_write(visitor: &mut CompilerVisitor, address: Variable16, value: Variable8) {
+pub(super) fn write(visitor: &mut CompilerVisitor, address: Variable16, value: Variable8) {
     let mut if_address_in_range =
         |range: RangeInclusive<u16>,
          populate_write_block: fn(&mut BasicBlock, Variable16, Variable8)| {

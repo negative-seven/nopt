@@ -1,6 +1,8 @@
+mod cpu_memory;
+
 use crate::{
     compiler::{
-        frontend::{instruction_compiler::CompilerVisitor, memory_compiler},
+        frontend::CompilerVisitor,
         ir::{
             CpuFlag, CpuRegister, Definition1, Definition8, Definition16, Destination1,
             Destination8, Jump, Variable1, Variable8, Variable16,
@@ -10,12 +12,12 @@ use crate::{
 };
 use tracing::warn;
 
-pub(crate) struct AbstractInstructionCompiler {
+pub(crate) struct Compiler {
     pub(crate) visitor: CompilerVisitor,
     pub(crate) cpu_instruction: nes_assembly::Instruction,
 }
 
-impl AbstractInstructionCompiler {
+impl Compiler {
     #[expect(clippy::too_many_lines)]
     pub(crate) fn transpile(mut self) {
         let mut jump = None;
@@ -641,8 +643,8 @@ impl AbstractInstructionCompiler {
         });
         let high_address = self.define_16(high_address_high % high_address_low);
 
-        let low = memory_compiler::compile_read(&mut self.visitor, low_address);
-        let high = memory_compiler::compile_read(&mut self.visitor, high_address);
+        let low = cpu_memory::read(&mut self.visitor, low_address);
+        let high = cpu_memory::read(&mut self.visitor, high_address);
         self.define_16(high % low)
     }
 
@@ -674,7 +676,7 @@ impl AbstractInstructionCompiler {
         });
         let address = self.define_16(n1 % s);
 
-        memory_compiler::compile_write(&mut self.visitor, address, value);
+        cpu_memory::write(&mut self.visitor, address, value);
         self.store_8(CpuRegister::S, s_minus_1);
     }
 
@@ -697,7 +699,7 @@ impl AbstractInstructionCompiler {
             operand_carry: r#false,
         });
         let result_address = self.define_16(n1 % s_plus_1);
-        let result = memory_compiler::compile_read(&mut self.visitor, result_address);
+        let result = cpu_memory::read(&mut self.visitor, result_address);
 
         self.store_8(CpuRegister::S, s_plus_1);
         result
@@ -807,7 +809,7 @@ impl AbstractInstructionCompiler {
             | nes_assembly::AddressingMode::ZeropageX
             | nes_assembly::AddressingMode::ZeropageY => {
                 let address = self.get_operand_address();
-                memory_compiler::compile_read(&mut self.visitor, address)
+                cpu_memory::read(&mut self.visitor, address)
             }
             nes_assembly::AddressingMode::Accumulator => self.define_8(CpuRegister::A),
             nes_assembly::AddressingMode::Immediate => {
@@ -832,7 +834,7 @@ impl AbstractInstructionCompiler {
             | nes_assembly::AddressingMode::ZeropageX
             | nes_assembly::AddressingMode::ZeropageY => {
                 let address = self.get_operand_address();
-                memory_compiler::compile_write(&mut self.visitor, address, source);
+                cpu_memory::write(&mut self.visitor, address, source);
             }
             nes_assembly::AddressingMode::Accumulator => {
                 self.store_8(CpuRegister::A, source);
