@@ -5,20 +5,18 @@ use crate::compiler::ir::{
 use std::{cell::RefCell, ops::RangeInclusive, rc::Rc};
 
 pub(super) fn compile_read(
-    basic_block: &mut Rc<RefCell<BasicBlock>>,
+    current_block: &mut Rc<RefCell<BasicBlock>>,
     address: Variable16,
 ) -> Variable8 {
-    let r#true = basic_block.borrow_mut().define_1(true.into());
-    let n0 = basic_block.borrow_mut().define_8(0.into());
+    let r#true = current_block.borrow_mut().define_1(true.into());
+    let n0 = current_block.borrow_mut().define_8(0.into());
 
-    let variable_id_counter = Rc::clone(&basic_block.borrow().variable_id_counter);
+    let variable_id_counter = Rc::clone(&current_block.borrow().variable_id_counter);
     let exit_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
         &variable_id_counter,
     ))));
     exit_block.borrow_mut().set_has_argument(true);
-    exit_block.borrow_mut().jump = basic_block.borrow().jump.clone();
-
-    let mut current_block = Rc::clone(basic_block);
+    exit_block.borrow_mut().jump = current_block.borrow().jump.clone();
 
     let mut compile_read_in_range =
         |address_range: RangeInclusive<u16>,
@@ -66,7 +64,7 @@ pub(super) fn compile_read(
                 target_if_false_argument: None,
             };
 
-            current_block = not_read_block;
+            *current_block = not_read_block;
         };
 
     compile_read_in_range(0x0..=0x7ff, |block, address| {
@@ -95,24 +93,22 @@ pub(super) fn compile_read(
     let value = exit_block
         .borrow_mut()
         .define_8(Definition8::BasicBlockArgument);
-    *basic_block = exit_block;
+    *current_block = exit_block;
     value
 }
 
 pub(super) fn compile_write(
-    basic_block: &mut Rc<RefCell<BasicBlock>>,
+    current_block: &mut Rc<RefCell<BasicBlock>>,
     address: Variable16,
     value: Variable8,
 ) {
-    let r#true = basic_block.borrow_mut().define_1(true.into());
+    let r#true = current_block.borrow_mut().define_1(true.into());
 
-    let variable_id_counter = Rc::clone(&basic_block.borrow().variable_id_counter);
+    let variable_id_counter = Rc::clone(&current_block.borrow().variable_id_counter);
     let exit_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
         &variable_id_counter,
     ))));
-    exit_block.borrow_mut().jump = basic_block.borrow().jump.clone();
-
-    let mut current_block = Rc::clone(basic_block);
+    exit_block.borrow_mut().jump = current_block.borrow().jump.clone();
 
     let mut compile_write_in_range =
         |address_range: RangeInclusive<u16>,
@@ -160,7 +156,7 @@ pub(super) fn compile_write(
                 target_if_false_argument: None,
             };
 
-            current_block = not_write_block;
+            *current_block = not_write_block;
         };
 
     compile_write_in_range(0x0..=0x7ff, |block, address, value| {
@@ -201,5 +197,5 @@ pub(super) fn compile_write(
         target_if_false_argument: None,
     };
 
-    *basic_block = exit_block;
+    *current_block = exit_block;
 }
