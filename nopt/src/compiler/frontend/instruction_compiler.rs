@@ -29,8 +29,7 @@ struct InstructionCompiler {
 impl InstructionCompiler {
     #[expect(clippy::too_many_lines)]
     pub(crate) fn transpile(mut self) {
-        self.current_block.borrow_mut().jump =
-            Jump::CpuAddress(self.define_16(self.cpu_instruction.address_end()));
+        let mut jump = None;
 
         match self.cpu_instruction.operation().mnemonic() {
             nes_assembly::Mnemonic::Adc => {
@@ -93,7 +92,7 @@ impl InstructionCompiler {
                     result_if_false: address_if_false,
                 });
 
-                self.jump_to_cpu_address(jump_target);
+                jump = Some(Jump::CpuAddress(jump_target));
             }
             nes_assembly::Mnemonic::Bcs => {
                 let c = self.define_1(CpuFlag::C);
@@ -106,7 +105,7 @@ impl InstructionCompiler {
                     result_if_false: address_if_false,
                 });
 
-                self.jump_to_cpu_address(jump_target);
+                jump = Some(Jump::CpuAddress(jump_target));
             }
             nes_assembly::Mnemonic::Beq => {
                 let z = self.define_1(CpuFlag::Z);
@@ -118,7 +117,7 @@ impl InstructionCompiler {
                     result_if_false: address_if_false,
                 });
 
-                self.jump_to_cpu_address(jump_target);
+                jump = Some(Jump::CpuAddress(jump_target));
             }
             nes_assembly::Mnemonic::Bit => {
                 let operand = self.read_operand_u8();
@@ -142,7 +141,7 @@ impl InstructionCompiler {
                     result_if_false: address_if_false,
                 });
 
-                self.jump_to_cpu_address(jump_target);
+                jump = Some(Jump::CpuAddress(jump_target));
             }
             nes_assembly::Mnemonic::Bne => {
                 let z = self.define_1(CpuFlag::Z);
@@ -155,7 +154,7 @@ impl InstructionCompiler {
                     result_if_false: address_if_false,
                 });
 
-                self.jump_to_cpu_address(jump_target);
+                jump = Some(Jump::CpuAddress(jump_target));
             }
             nes_assembly::Mnemonic::Bpl => {
                 let n = self.define_1(CpuFlag::N);
@@ -168,7 +167,7 @@ impl InstructionCompiler {
                     result_if_false: address_if_false,
                 });
 
-                self.jump_to_cpu_address(jump_target);
+                jump = Some(Jump::CpuAddress(jump_target));
             }
             nes_assembly::Mnemonic::Brk => {
                 let r#true = self.define_1(true);
@@ -190,7 +189,7 @@ impl InstructionCompiler {
                 self.store_1(CpuFlag::I, r#true);
                 self.push_u16(pc_plus_two);
                 self.push_u8(p);
-                self.jump_to_cpu_address(irq_handler);
+                jump = Some(Jump::CpuAddress(irq_handler));
             }
             nes_assembly::Mnemonic::Bvc => {
                 let v = self.define_1(CpuFlag::V);
@@ -203,7 +202,7 @@ impl InstructionCompiler {
                     result_if_false: address_if_false,
                 });
 
-                self.jump_to_cpu_address(jump_target);
+                jump = Some(Jump::CpuAddress(jump_target));
             }
             nes_assembly::Mnemonic::Bvs => {
                 let v = self.define_1(CpuFlag::V);
@@ -215,7 +214,7 @@ impl InstructionCompiler {
                     result_if_false: address_if_false,
                 });
 
-                self.jump_to_cpu_address(jump_target);
+                jump = Some(Jump::CpuAddress(jump_target));
             }
             nes_assembly::Mnemonic::Clc => {
                 let r#false = self.define_1(false);
@@ -393,7 +392,7 @@ impl InstructionCompiler {
             nes_assembly::Mnemonic::Jmp => {
                 let address = self.read_operand_u16();
 
-                self.jump_to_cpu_address(address);
+                jump = Some(Jump::CpuAddress(address));
             }
             nes_assembly::Mnemonic::Jsr => {
                 let n2 = self.define_16(2);
@@ -406,7 +405,7 @@ impl InstructionCompiler {
                 let address = self.read_operand_u16();
 
                 self.push_u16(pc_plus_2);
-                self.jump_to_cpu_address(address);
+                jump = Some(Jump::CpuAddress(address));
             }
             nes_assembly::Mnemonic::Lda => {
                 let result = self.read_operand_u8();
@@ -517,7 +516,7 @@ impl InstructionCompiler {
 
                 self.store_8(CpuRegister::P, p);
                 self.store_1(CpuFlag::Unused, unused_flag);
-                self.jump_to_cpu_address(return_address);
+                jump = Some(Jump::CpuAddress(return_address));
             }
             nes_assembly::Mnemonic::Rts => {
                 let n1 = self.define_16(1);
@@ -528,7 +527,7 @@ impl InstructionCompiler {
                     operand_1: n1,
                 });
 
-                self.jump_to_cpu_address(return_address);
+                jump = Some(Jump::CpuAddress(return_address));
             }
             nes_assembly::Mnemonic::Sbc => {
                 let operand_0 = self.define_8(CpuRegister::A);
@@ -617,6 +616,10 @@ impl InstructionCompiler {
                 warn!("compiling unimplemented instruction");
             }
         }
+
+        self.current_block.borrow_mut().jump = jump.unwrap_or(Jump::CpuAddress(
+            self.define_16(self.cpu_instruction.address_end()),
+        ));
     }
 
     fn define_1(&mut self, definition: impl Into<Definition1>) -> Variable1 {
@@ -679,10 +682,6 @@ impl InstructionCompiler {
 
         self.store_1(CpuFlag::N, n);
         self.store_1(CpuFlag::Z, z);
-    }
-
-    fn jump_to_cpu_address(&mut self, cpu_address: Variable16) {
-        self.current_block.borrow_mut().jump = Jump::CpuAddress(cpu_address);
     }
 
     fn push_u8(&mut self, value: Variable8) {
