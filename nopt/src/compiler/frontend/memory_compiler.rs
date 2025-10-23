@@ -8,14 +8,6 @@ pub(super) fn compile_read(
     current_block: &mut Rc<RefCell<BasicBlock>>,
     address: Variable16,
 ) -> Variable8 {
-    let r#true = current_block.borrow_mut().define_1(true.into());
-
-    let variable_id_counter = Rc::clone(&current_block.borrow().variable_id_counter);
-    let exit_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
-        &variable_id_counter,
-    ))));
-    exit_block.borrow_mut().jump = current_block.borrow().jump.clone();
-
     let if_address_in_range =
         |current_block: &mut Rc<RefCell<BasicBlock>>,
          address_range: RangeInclusive<u16>,
@@ -74,22 +66,12 @@ pub(super) fn compile_read(
         |block, address| block.define_8(Definition8::PrgRam(address)),
         value,
     );
-    let value = if_address_in_range(
+    if_address_in_range(
         current_block,
         0x8000..=0xffff,
         |block, address| block.define_8(Definition8::Rom(address)),
         value,
-    );
-
-    current_block.borrow_mut().jump = Jump::BasicBlock {
-        condition: r#true,
-        target_if_true: Rc::clone(&exit_block),
-        target_if_true_argument: None,
-        target_if_false: exit_block,
-        target_if_false_argument: None,
-    };
-
-    value
+    )
 }
 
 pub(super) fn compile_write(
@@ -97,14 +79,6 @@ pub(super) fn compile_write(
     address: Variable16,
     value: Variable8,
 ) {
-    let r#true = current_block.borrow_mut().define_1(true.into());
-
-    let variable_id_counter = Rc::clone(&current_block.borrow().variable_id_counter);
-    let exit_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
-        &variable_id_counter,
-    ))));
-    exit_block.borrow_mut().jump = current_block.borrow().jump.clone();
-
     let mut if_address_in_range =
         |range: RangeInclusive<u16>,
          populate_write_block: fn(&mut BasicBlock, Variable16, Variable8)| {
@@ -165,16 +139,6 @@ pub(super) fn compile_write(
             variable: value,
         });
     });
-
-    current_block.borrow_mut().jump = Jump::BasicBlock {
-        condition: r#true,
-        target_if_true: Rc::clone(&exit_block),
-        target_if_true_argument: None,
-        target_if_false: Rc::clone(&exit_block),
-        target_if_false_argument: None,
-    };
-
-    *current_block = exit_block;
 }
 
 fn if_else(
