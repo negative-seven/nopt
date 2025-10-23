@@ -239,6 +239,14 @@ impl BitAnd for Variable1 {
     }
 }
 
+impl From<Destination1> for Definition1 {
+    fn from(value: Destination1) -> Self {
+        match value {
+            Destination1::CpuFlag(cpu_flag) => Definition1::CpuFlag(cpu_flag),
+        }
+    }
+}
+
 impl Debug for Definition1 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -409,6 +417,17 @@ impl BitXor for Variable8 {
     }
 }
 
+impl From<Destination8> for Definition8 {
+    fn from(value: Destination8) -> Self {
+        match value {
+            Destination8::CpuRegister(cpu_register) => Definition8::CpuRegister(cpu_register),
+            Destination8::CpuRam(address) => Definition8::CpuRam(address),
+            Destination8::PpuRam(address) => Definition8::PpuRam(address),
+            Destination8::PrgRam(address) => Definition8::PrgRam(address),
+        }
+    }
+}
+
 impl Debug for Definition8 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -515,6 +534,14 @@ impl Rem for Variable8 {
         Self::Output::FromU8s {
             low: rhs,
             high: self,
+        }
+    }
+}
+
+impl From<Destination16> for Definition16 {
+    fn from(value: Destination16) -> Self {
+        match value {
+            Destination16::PpuCurrentAddress => Definition16::PpuCurrentAddress,
         }
     }
 }

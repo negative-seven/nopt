@@ -5,8 +5,9 @@ use crate::{
     compiler::{
         frontend::r#abstract::Compiler,
         ir::{
-            BasicBlock, Definition1, Definition8, Definition16, Destination1, Destination8,
-            Function, Instruction, Jump, Variable1, Variable8, Variable16,
+            BasicBlock, CpuFlag, CpuRegister, Definition1, Definition8, Definition16, Destination1,
+            Destination8, Destination16, Function, Instruction, Jump, Variable1, Variable8,
+            Variable16,
         },
     },
     nes::Nes,
@@ -33,6 +34,62 @@ pub(crate) struct CompilerVisitor {
 }
 
 impl CompilerVisitor {
+    pub(crate) fn cpu_c(&self) -> Destination1 {
+        Destination1::CpuFlag(CpuFlag::C)
+    }
+
+    pub(crate) fn cpu_z(&self) -> Destination1 {
+        Destination1::CpuFlag(CpuFlag::Z)
+    }
+
+    pub(crate) fn cpu_i(&self) -> Destination1 {
+        Destination1::CpuFlag(CpuFlag::I)
+    }
+
+    pub(crate) fn cpu_d(&self) -> Destination1 {
+        Destination1::CpuFlag(CpuFlag::D)
+    }
+
+    pub(crate) fn cpu_b(&self) -> Destination1 {
+        Destination1::CpuFlag(CpuFlag::B)
+    }
+
+    pub(crate) fn cpu_unused_flag(&self) -> Destination1 {
+        Destination1::CpuFlag(CpuFlag::Unused)
+    }
+
+    pub(crate) fn cpu_v(&self) -> Destination1 {
+        Destination1::CpuFlag(CpuFlag::V)
+    }
+
+    pub(crate) fn cpu_n(&self) -> Destination1 {
+        Destination1::CpuFlag(CpuFlag::N)
+    }
+
+    pub(crate) fn cpu_a(&self) -> Destination8 {
+        Destination8::CpuRegister(CpuRegister::A)
+    }
+
+    pub(crate) fn cpu_x(&self) -> Destination8 {
+        Destination8::CpuRegister(CpuRegister::X)
+    }
+
+    pub(crate) fn cpu_y(&self) -> Destination8 {
+        Destination8::CpuRegister(CpuRegister::Y)
+    }
+
+    pub(crate) fn cpu_s(&self) -> Destination8 {
+        Destination8::CpuRegister(CpuRegister::S)
+    }
+
+    pub(crate) fn cpu_p(&self) -> Destination8 {
+        Destination8::CpuRegister(CpuRegister::P)
+    }
+
+    fn cpu_pc(&mut self) -> Variable16 {
+        self.define_16(Definition16::Pc)
+    }
+
     pub(crate) fn define_1(&mut self, definition: impl Into<Definition1>) -> Variable1 {
         self.current_block.borrow_mut().define_1(definition.into())
     }

@@ -4,8 +4,8 @@ use crate::{
     compiler::{
         frontend::CompilerVisitor,
         ir::{
-            CpuFlag, CpuRegister, Definition1, Definition8, Definition16, Destination1,
-            Destination8, Jump, Variable1, Variable8, Variable16,
+            CpuFlag, Definition1, Definition8, Definition16, Destination1, Destination8, Jump,
+            Variable1, Variable8, Variable16,
         },
     },
     nes_assembly,
@@ -24,9 +24,9 @@ impl Compiler {
 
         match self.cpu_instruction.operation().mnemonic() {
             nes_assembly::Mnemonic::Adc => {
-                let operand_0 = self.define_8(CpuRegister::A);
+                let operand_0 = self.define_8(self.visitor.cpu_a());
                 let operand_1 = self.read_operand_u8();
-                let operand_carry = self.define_1(CpuFlag::C);
+                let operand_carry = self.define_1(self.visitor.cpu_c());
 
                 let result = self.define_8(Definition8::Sum {
                     operand_0,
@@ -44,18 +44,18 @@ impl Compiler {
                     operand_carry,
                 });
 
-                self.store_8(CpuRegister::A, result);
-                self.store_1(CpuFlag::C, result_carry);
-                self.store_1(CpuFlag::V, result_overflow);
+                self.store_8(self.visitor.cpu_a(), result);
+                self.store_1(self.visitor.cpu_c(), result_carry);
+                self.store_1(self.visitor.cpu_v(), result_overflow);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::And => {
-                let operand_0 = self.define_8(CpuRegister::A);
+                let operand_0 = self.define_8(self.visitor.cpu_a());
                 let operand_1 = self.read_operand_u8();
 
                 let result = self.define_8(operand_0 & operand_1);
 
-                self.store_8(CpuRegister::A, result);
+                self.store_8(self.visitor.cpu_a(), result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Asl => {
@@ -69,11 +69,11 @@ impl Compiler {
                 let result_carry = self.define_1(Definition1::U8Bit { operand, index: 7 });
 
                 self.write_operand_u8(result);
-                self.store_1(CpuFlag::C, result_carry);
+                self.store_1(self.visitor.cpu_c(), result_carry);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Bcc => {
-                let c = self.define_1(CpuFlag::C);
+                let c = self.define_1(self.visitor.cpu_c());
                 let not_c = self.define_1(!c);
                 let address_if_true = self.read_operand_u16();
                 let address_if_false = self.define_16(self.cpu_instruction.address_end());
@@ -86,7 +86,7 @@ impl Compiler {
                 jump = Some(Jump::CpuAddress(jump_target));
             }
             nes_assembly::Mnemonic::Bcs => {
-                let c = self.define_1(CpuFlag::C);
+                let c = self.define_1(self.visitor.cpu_c());
                 let address_if_true = self.read_operand_u16();
                 let address_if_false = self.define_16(self.cpu_instruction.address_end());
 
@@ -99,7 +99,7 @@ impl Compiler {
                 jump = Some(Jump::CpuAddress(jump_target));
             }
             nes_assembly::Mnemonic::Beq => {
-                let z = self.define_1(CpuFlag::Z);
+                let z = self.define_1(self.visitor.cpu_z());
                 let address_if_true = self.read_operand_u16();
                 let address_if_false = self.define_16(self.cpu_instruction.address_end());
                 let jump_target = self.define_16(Definition16::Select {
@@ -114,16 +114,16 @@ impl Compiler {
                 let operand = self.read_operand_u8();
                 let n = self.define_1(Definition1::U8Bit { operand, index: 7 });
                 let v = self.define_1(Definition1::U8Bit { operand, index: 6 });
-                let a = self.define_8(CpuRegister::A);
+                let a = self.define_8(self.visitor.cpu_a());
                 let result = self.define_8(a & operand);
                 let z = self.define_1(Definition1::EqualToZero(result));
 
-                self.store_1(CpuFlag::N, n);
-                self.store_1(CpuFlag::V, v);
-                self.store_1(CpuFlag::Z, z);
+                self.store_1(self.visitor.cpu_n(), n);
+                self.store_1(self.visitor.cpu_v(), v);
+                self.store_1(self.visitor.cpu_z(), z);
             }
             nes_assembly::Mnemonic::Bmi => {
-                let n = self.define_1(CpuFlag::N);
+                let n = self.define_1(self.visitor.cpu_n());
                 let address_if_true = self.read_operand_u16();
                 let address_if_false = self.define_16(self.cpu_instruction.address_end());
                 let jump_target = self.define_16(Definition16::Select {
@@ -135,7 +135,7 @@ impl Compiler {
                 jump = Some(Jump::CpuAddress(jump_target));
             }
             nes_assembly::Mnemonic::Bne => {
-                let z = self.define_1(CpuFlag::Z);
+                let z = self.define_1(self.visitor.cpu_z());
                 let not_z = self.define_1(!z);
                 let address_if_true = self.read_operand_u16();
                 let address_if_false = self.define_16(self.cpu_instruction.address_end());
@@ -148,7 +148,7 @@ impl Compiler {
                 jump = Some(Jump::CpuAddress(jump_target));
             }
             nes_assembly::Mnemonic::Bpl => {
-                let n = self.define_1(CpuFlag::N);
+                let n = self.define_1(self.visitor.cpu_n());
                 let not_n = self.define_1(!n);
                 let address_if_true = self.read_operand_u16();
                 let address_if_false = self.define_16(self.cpu_instruction.address_end());
@@ -164,7 +164,7 @@ impl Compiler {
                 let r#true = self.define_1(true);
                 let n2 = self.define_16(2);
 
-                let pc = self.define_16(Definition16::Pc);
+                let pc = self.visitor.cpu_pc();
                 let pc_plus_two = self.define_16(Definition16::Sum {
                     operand_0: pc,
                     operand_1: n2,
@@ -172,18 +172,18 @@ impl Compiler {
                 let irq_handler_address = self.define_16(0xfffe);
                 let irq_handler = self.read_u16_deref(irq_handler_address);
 
-                self.store_1(CpuFlag::Unused, r#true);
-                self.store_1(CpuFlag::B, r#true);
+                self.store_1(self.visitor.cpu_unused_flag(), r#true);
+                self.store_1(self.visitor.cpu_b(), r#true);
 
-                let p = self.define_8(CpuRegister::P);
+                let p = self.define_8(self.visitor.cpu_p());
 
-                self.store_1(CpuFlag::I, r#true);
+                self.store_1(self.visitor.cpu_i(), r#true);
                 self.push_u16(pc_plus_two);
                 self.push_u8(p);
                 jump = Some(Jump::CpuAddress(irq_handler));
             }
             nes_assembly::Mnemonic::Bvc => {
-                let v = self.define_1(CpuFlag::V);
+                let v = self.define_1(self.visitor.cpu_v());
                 let not_v = self.define_1(!v);
                 let address_if_true = self.read_operand_u16();
                 let address_if_false = self.define_16(self.cpu_instruction.address_end());
@@ -196,7 +196,7 @@ impl Compiler {
                 jump = Some(Jump::CpuAddress(jump_target));
             }
             nes_assembly::Mnemonic::Bvs => {
-                let v = self.define_1(CpuFlag::V);
+                let v = self.define_1(self.visitor.cpu_v());
                 let address_if_true = self.read_operand_u16();
                 let address_if_false = self.define_16(self.cpu_instruction.address_end());
                 let jump_target = self.define_16(Definition16::Select {
@@ -210,25 +210,25 @@ impl Compiler {
             nes_assembly::Mnemonic::Clc => {
                 let r#false = self.define_1(false);
 
-                self.store_1(CpuFlag::C, r#false);
+                self.store_1(self.visitor.cpu_c(), r#false);
             }
             nes_assembly::Mnemonic::Cld => {
                 let r#false = self.define_1(false);
 
-                self.store_1(CpuFlag::D, r#false);
+                self.store_1(self.visitor.cpu_d(), r#false);
             }
             nes_assembly::Mnemonic::Cli => {
                 let r#false = self.define_1(false);
 
-                self.store_1(CpuFlag::I, r#false);
+                self.store_1(self.visitor.cpu_i(), r#false);
             }
             nes_assembly::Mnemonic::Clv => {
                 let r#false = self.define_1(false);
 
-                self.store_1(CpuFlag::V, r#false);
+                self.store_1(self.visitor.cpu_v(), r#false);
             }
             nes_assembly::Mnemonic::Cmp => {
-                let operand_0 = self.define_8(CpuRegister::A);
+                let operand_0 = self.define_8(self.visitor.cpu_a());
                 let operand_1 = self.read_operand_u8();
                 let operand_borrow = self.define_1(false);
 
@@ -244,11 +244,11 @@ impl Compiler {
                 });
                 let result_carry = self.define_1(!result_borrow);
 
-                self.store_1(CpuFlag::C, result_carry);
+                self.store_1(self.visitor.cpu_c(), result_carry);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Cpx => {
-                let operand_0 = self.define_8(CpuRegister::X);
+                let operand_0 = self.define_8(self.visitor.cpu_x());
                 let operand_1 = self.read_operand_u8();
                 let operand_borrow = self.define_1(false);
 
@@ -264,11 +264,11 @@ impl Compiler {
                 });
                 let result_carry = self.define_1(!result_borrow);
 
-                self.store_1(CpuFlag::C, result_carry);
+                self.store_1(self.visitor.cpu_c(), result_carry);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Cpy => {
-                let operand_0 = self.define_8(CpuRegister::Y);
+                let operand_0 = self.define_8(self.visitor.cpu_y());
                 let operand_1 = self.read_operand_u8();
                 let operand_borrow = self.define_1(false);
 
@@ -284,7 +284,7 @@ impl Compiler {
                 });
                 let result_carry = self.define_1(!result_borrow);
 
-                self.store_1(CpuFlag::C, result_carry);
+                self.store_1(self.visitor.cpu_c(), result_carry);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Dec => {
@@ -302,7 +302,7 @@ impl Compiler {
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Dex => {
-                let operand_0 = self.define_8(CpuRegister::X);
+                let operand_0 = self.define_8(self.visitor.cpu_x());
                 let operand_1 = self.define_8(1);
                 let operand_borrow = self.define_1(false);
 
@@ -312,11 +312,11 @@ impl Compiler {
                     operand_borrow,
                 });
 
-                self.store_8(CpuRegister::X, result);
+                self.store_8(self.visitor.cpu_x(), result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Dey => {
-                let operand_0 = self.define_8(CpuRegister::Y);
+                let operand_0 = self.define_8(self.visitor.cpu_y());
                 let operand_1 = self.define_8(1);
                 let operand_borrow = self.define_1(false);
 
@@ -326,16 +326,16 @@ impl Compiler {
                     operand_borrow,
                 });
 
-                self.store_8(CpuRegister::Y, result);
+                self.store_8(self.visitor.cpu_y(), result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Eor => {
-                let operand_0 = self.define_8(CpuRegister::A);
+                let operand_0 = self.define_8(self.visitor.cpu_a());
                 let operand_1 = self.read_operand_u8();
 
                 let result = self.define_8(operand_0 ^ operand_1);
 
-                self.store_8(CpuRegister::A, result);
+                self.store_8(self.visitor.cpu_a(), result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Inc => {
@@ -353,7 +353,7 @@ impl Compiler {
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Inx => {
-                let operand_0 = self.define_8(CpuRegister::X);
+                let operand_0 = self.define_8(self.visitor.cpu_x());
                 let operand_1 = self.define_8(1);
                 let operand_carry = self.define_1(false);
 
@@ -363,11 +363,11 @@ impl Compiler {
                     operand_carry,
                 });
 
-                self.store_8(CpuRegister::X, result);
+                self.store_8(self.visitor.cpu_x(), result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Iny => {
-                let operand_0 = self.define_8(CpuRegister::Y);
+                let operand_0 = self.define_8(self.visitor.cpu_y());
                 let operand_1 = self.define_8(1);
                 let operand_carry = self.define_1(false);
 
@@ -377,7 +377,7 @@ impl Compiler {
                     operand_carry,
                 });
 
-                self.store_8(CpuRegister::Y, result);
+                self.store_8(self.visitor.cpu_y(), result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Jmp => {
@@ -388,7 +388,7 @@ impl Compiler {
             nes_assembly::Mnemonic::Jsr => {
                 let n2 = self.define_16(2);
 
-                let pc = self.define_16(Definition16::Pc);
+                let pc = self.visitor.cpu_pc();
                 let pc_plus_2 = self.define_16(Definition16::Sum {
                     operand_0: pc,
                     operand_1: n2,
@@ -401,19 +401,19 @@ impl Compiler {
             nes_assembly::Mnemonic::Lda => {
                 let result = self.read_operand_u8();
 
-                self.store_8(CpuRegister::A, result);
+                self.store_8(self.visitor.cpu_a(), result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Ldx => {
                 let result = self.read_operand_u8();
 
-                self.store_8(CpuRegister::X, result);
+                self.store_8(self.visitor.cpu_x(), result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Ldy => {
                 let result = self.read_operand_u8();
 
-                self.store_8(CpuRegister::Y, result);
+                self.store_8(self.visitor.cpu_y(), result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Lsr => {
@@ -428,21 +428,21 @@ impl Compiler {
                 let result_carry = self.define_1(Definition1::U8Bit { operand, index: 0 });
 
                 self.write_operand_u8(result);
-                self.store_1(CpuFlag::C, result_carry);
+                self.store_1(self.visitor.cpu_c(), result_carry);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Nop => {}
             nes_assembly::Mnemonic::Ora => {
-                let operand_0 = self.define_8(CpuRegister::A);
+                let operand_0 = self.define_8(self.visitor.cpu_a());
                 let operand_1 = self.read_operand_u8();
 
                 let result = self.define_8(operand_0 | operand_1);
 
-                self.store_8(CpuRegister::A, result);
+                self.store_8(self.visitor.cpu_a(), result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Pha => {
-                let value = self.define_8(CpuRegister::A);
+                let value = self.define_8(self.visitor.cpu_a());
 
                 self.push_u8(value);
             }
@@ -450,7 +450,7 @@ impl Compiler {
                 let set_flags_mask =
                     self.define_8((1 << CpuFlag::Unused.index()) | (1 << CpuFlag::B.index()));
 
-                let value = self.define_8(CpuRegister::P);
+                let value = self.define_8(self.visitor.cpu_p());
                 let value = self.define_8(value | set_flags_mask);
 
                 self.push_u8(value);
@@ -458,21 +458,21 @@ impl Compiler {
             nes_assembly::Mnemonic::Pla => {
                 let value = self.pop_u8();
 
-                self.store_8(CpuRegister::A, value);
+                self.store_8(self.visitor.cpu_a(), value);
                 self.set_nz(value);
             }
             nes_assembly::Mnemonic::Plp => {
-                let b = self.define_1(CpuFlag::B);
-                let unused_flag = self.define_1(CpuFlag::Unused);
+                let b = self.define_1(self.visitor.cpu_b());
+                let unused_flag = self.define_1(self.visitor.cpu_unused_flag());
                 let value = self.pop_u8();
 
-                self.store_8(CpuRegister::P, value);
-                self.store_1(CpuFlag::B, b);
-                self.store_1(CpuFlag::Unused, unused_flag);
+                self.store_8(self.visitor.cpu_p(), value);
+                self.store_1(self.visitor.cpu_b(), b);
+                self.store_1(self.visitor.cpu_unused_flag(), unused_flag);
             }
             nes_assembly::Mnemonic::Rol => {
                 let operand = self.read_operand_u8();
-                let operand_carry = self.define_1(CpuFlag::C);
+                let operand_carry = self.define_1(self.visitor.cpu_c());
 
                 let result = self.define_8(Definition8::RotateLeft {
                     operand,
@@ -482,12 +482,12 @@ impl Compiler {
                 let result_carry = self.define_1(Definition1::U8Bit { operand, index: 7 });
 
                 self.write_operand_u8(result);
-                self.store_1(CpuFlag::C, result_carry);
+                self.store_1(self.visitor.cpu_c(), result_carry);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Ror => {
                 let operand = self.read_operand_u8();
-                let operand_carry = self.define_1(CpuFlag::C);
+                let operand_carry = self.define_1(self.visitor.cpu_c());
 
                 let result = self.define_8(Definition8::RotateRight {
                     operand,
@@ -497,16 +497,16 @@ impl Compiler {
                 let result_carry = self.define_1(Definition1::U8Bit { operand, index: 0 });
 
                 self.write_operand_u8(result);
-                self.store_1(CpuFlag::C, result_carry);
+                self.store_1(self.visitor.cpu_c(), result_carry);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Rti => {
-                let unused_flag = self.define_1(CpuFlag::Unused);
+                let unused_flag = self.define_1(self.visitor.cpu_unused_flag());
                 let p = self.pop_u8();
                 let return_address = self.pop_u16();
 
-                self.store_8(CpuRegister::P, p);
-                self.store_1(CpuFlag::Unused, unused_flag);
+                self.store_8(self.visitor.cpu_p(), p);
+                self.store_1(self.visitor.cpu_unused_flag(), unused_flag);
                 jump = Some(Jump::CpuAddress(return_address));
             }
             nes_assembly::Mnemonic::Rts => {
@@ -521,9 +521,9 @@ impl Compiler {
                 jump = Some(Jump::CpuAddress(return_address));
             }
             nes_assembly::Mnemonic::Sbc => {
-                let operand_0 = self.define_8(CpuRegister::A);
+                let operand_0 = self.define_8(self.visitor.cpu_a());
                 let operand_1 = self.read_operand_u8();
-                let operand_carry = self.define_1(CpuFlag::C);
+                let operand_carry = self.define_1(self.visitor.cpu_c());
                 let operand_borrow = self.define_1(!operand_carry);
 
                 let result = self.define_8(Definition8::Difference {
@@ -543,62 +543,62 @@ impl Compiler {
                     operand_borrow,
                 });
 
-                self.store_8(CpuRegister::A, result);
-                self.store_1(CpuFlag::C, result_carry);
-                self.store_1(CpuFlag::V, result_overflow);
+                self.store_8(self.visitor.cpu_a(), result);
+                self.store_1(self.visitor.cpu_c(), result_carry);
+                self.store_1(self.visitor.cpu_v(), result_overflow);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Sec => {
                 let r#true = self.define_1(true);
-                self.store_1(CpuFlag::C, r#true);
+                self.store_1(self.visitor.cpu_c(), r#true);
             }
             nes_assembly::Mnemonic::Sed => {
                 let r#true = self.define_1(true);
-                self.store_1(CpuFlag::D, r#true);
+                self.store_1(self.visitor.cpu_d(), r#true);
             }
             nes_assembly::Mnemonic::Sei => {
                 let r#true = self.define_1(true);
-                self.store_1(CpuFlag::I, r#true);
+                self.store_1(self.visitor.cpu_i(), r#true);
             }
             nes_assembly::Mnemonic::Sta => {
-                let result = self.define_8(CpuRegister::A);
+                let result = self.define_8(self.visitor.cpu_a());
                 self.write_operand_u8(result);
             }
             nes_assembly::Mnemonic::Stx => {
-                let result = self.define_8(CpuRegister::X);
+                let result = self.define_8(self.visitor.cpu_x());
                 self.write_operand_u8(result);
             }
             nes_assembly::Mnemonic::Sty => {
-                let result = self.define_8(CpuRegister::Y);
+                let result = self.define_8(self.visitor.cpu_y());
                 self.write_operand_u8(result);
             }
             nes_assembly::Mnemonic::Tax => {
-                let result = self.define_8(CpuRegister::A);
-                self.store_8(CpuRegister::X, result);
+                let result = self.define_8(self.visitor.cpu_a());
+                self.store_8(self.visitor.cpu_x(), result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Tay => {
-                let result = self.define_8(CpuRegister::A);
-                self.store_8(CpuRegister::Y, result);
+                let result = self.define_8(self.visitor.cpu_a());
+                self.store_8(self.visitor.cpu_y(), result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Tsx => {
-                let result = self.define_8(CpuRegister::S);
-                self.store_8(CpuRegister::X, result);
+                let result = self.define_8(self.visitor.cpu_s());
+                self.store_8(self.visitor.cpu_x(), result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Txa => {
-                let result = self.define_8(CpuRegister::X);
-                self.store_8(CpuRegister::A, result);
+                let result = self.define_8(self.visitor.cpu_x());
+                self.store_8(self.visitor.cpu_a(), result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Txs => {
-                let result = self.define_8(CpuRegister::X);
-                self.store_8(CpuRegister::S, result);
+                let result = self.define_8(self.visitor.cpu_x());
+                self.store_8(self.visitor.cpu_s(), result);
             }
             nes_assembly::Mnemonic::Tya => {
-                let result = self.define_8(CpuRegister::Y);
-                self.store_8(CpuRegister::A, result);
+                let result = self.define_8(self.visitor.cpu_y());
+                self.store_8(self.visitor.cpu_a(), result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Unimplemented => {
@@ -660,15 +660,15 @@ impl Compiler {
         let n = self.define_1(Definition1::Negative(value));
         let z = self.define_1(Definition1::EqualToZero(value));
 
-        self.store_1(CpuFlag::N, n);
-        self.store_1(CpuFlag::Z, z);
+        self.store_1(self.visitor.cpu_n(), n);
+        self.store_1(self.visitor.cpu_z(), z);
     }
 
     fn push_u8(&mut self, value: Variable8) {
         let r#false = self.define_1(false);
         let n1 = self.define_8(1);
 
-        let s = self.define_8(CpuRegister::S);
+        let s = self.define_8(self.visitor.cpu_s());
         let s_minus_1 = self.define_8(Definition8::Difference {
             operand_0: s,
             operand_1: n1,
@@ -677,7 +677,7 @@ impl Compiler {
         let address = self.define_16(n1 % s);
 
         cpu_memory::write(&mut self.visitor, address, value);
-        self.store_8(CpuRegister::S, s_minus_1);
+        self.store_8(self.visitor.cpu_s(), s_minus_1);
     }
 
     fn push_u16(&mut self, value: Variable16) {
@@ -692,7 +692,7 @@ impl Compiler {
         let r#false = self.define_1(false);
         let n1 = self.define_8(1);
 
-        let s = self.define_8(CpuRegister::S);
+        let s = self.define_8(self.visitor.cpu_s());
         let s_plus_1 = self.define_8(Definition8::Sum {
             operand_0: s,
             operand_1: n1,
@@ -701,7 +701,7 @@ impl Compiler {
         let result_address = self.define_16(n1 % s_plus_1);
         let result = cpu_memory::read(&mut self.visitor, result_address);
 
-        self.store_8(CpuRegister::S, s_plus_1);
+        self.store_8(self.visitor.cpu_s(), s_plus_1);
         result
     }
 
@@ -720,7 +720,7 @@ impl Compiler {
             nes_assembly::AddressingMode::AbsoluteX => {
                 let n0 = self.define_8(0);
 
-                let x = self.define_8(CpuRegister::X);
+                let x = self.define_8(self.visitor.cpu_x());
                 let operand_0 = self.define_16(self.cpu_instruction.operand_u16());
                 let operand_1 = self.define_16(n0 % x);
                 self.define_16(Definition16::Sum {
@@ -731,7 +731,7 @@ impl Compiler {
             nes_assembly::AddressingMode::AbsoluteY => {
                 let n0 = self.define_8(0);
 
-                let y = self.define_8(CpuRegister::Y);
+                let y = self.define_8(self.visitor.cpu_y());
                 let y_u16 = self.define_16(Definition16::FromU8s { low: y, high: n0 });
                 let operand = self.define_16(self.cpu_instruction.operand_u16());
                 self.define_16(Definition16::Sum {
@@ -750,7 +750,7 @@ impl Compiler {
                 let operand =
                     self.define_16(Definition16::Immediate(self.cpu_instruction.operand_u16()));
                 let operand_0 = self.read_u16_deref(operand);
-                let y = self.define_8(CpuRegister::Y);
+                let y = self.define_8(self.visitor.cpu_y());
                 let operand_1 = self.define_16(n0 % y);
                 self.define_16(Definition16::Sum {
                     operand_0,
@@ -761,7 +761,7 @@ impl Compiler {
                 let r#false = self.define_1(false);
                 let n0 = self.define_8(0);
 
-                let x = self.define_8(CpuRegister::X);
+                let x = self.define_8(self.visitor.cpu_x());
                 let operand = self.define_8(self.cpu_instruction.operand_u8());
                 let address = self.define_8(Definition8::Sum {
                     operand_0: operand,
@@ -774,7 +774,7 @@ impl Compiler {
             nes_assembly::AddressingMode::ZeropageX => {
                 let n0 = self.define_8(0);
                 let operand = self.define_8(self.cpu_instruction.operand_u8());
-                let x = self.define_8(CpuRegister::X);
+                let x = self.define_8(self.visitor.cpu_x());
                 let r#false = self.define_1(false);
                 let address = self.define_8(Definition8::Sum {
                     operand_0: operand,
@@ -786,7 +786,7 @@ impl Compiler {
             nes_assembly::AddressingMode::ZeropageY => {
                 let n0 = self.define_8(0);
                 let operand = self.define_8(self.cpu_instruction.operand_u8());
-                let y = self.define_8(CpuRegister::Y);
+                let y = self.define_8(self.visitor.cpu_y());
                 let r#false = self.define_1(false);
                 let address = self.define_8(Definition8::Sum {
                     operand_0: operand,
@@ -811,7 +811,10 @@ impl Compiler {
                 let address = self.get_operand_address();
                 cpu_memory::read(&mut self.visitor, address)
             }
-            nes_assembly::AddressingMode::Accumulator => self.define_8(CpuRegister::A),
+            nes_assembly::AddressingMode::Accumulator => {
+                let a = self.visitor.cpu_a();
+                self.define_8(a)
+            }
             nes_assembly::AddressingMode::Immediate => {
                 self.define_8(self.cpu_instruction.operand_u8())
             }
@@ -837,7 +840,8 @@ impl Compiler {
                 cpu_memory::write(&mut self.visitor, address, source);
             }
             nes_assembly::AddressingMode::Accumulator => {
-                self.store_8(CpuRegister::A, source);
+                let a = self.visitor.cpu_a();
+                self.store_8(a, source);
             }
             nes_assembly::AddressingMode::Immediate
             | nes_assembly::AddressingMode::Implied
