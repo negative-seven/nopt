@@ -4,24 +4,31 @@ use crate::compiler::ir::{
 };
 use std::{cell::RefCell, ops::RangeInclusive, rc::Rc};
 
+#[expect(clippy::too_many_lines, reason = "TODO")]
 pub(super) fn compile_read(
     current_block: &mut Rc<RefCell<BasicBlock>>,
     address: Variable16,
 ) -> Variable8 {
     let r#true = current_block.borrow_mut().define_1(true.into());
-    let n0 = current_block.borrow_mut().define_8(0.into());
 
     let variable_id_counter = Rc::clone(&current_block.borrow().variable_id_counter);
     let exit_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
         &variable_id_counter,
     ))));
-    exit_block.borrow_mut().set_has_argument(true);
     exit_block.borrow_mut().jump = current_block.borrow().jump.clone();
 
-    let mut compile_read_in_range =
-        |address_range: RangeInclusive<u16>,
-         read_block_instruction_provider: fn(&mut BasicBlock, Variable16) -> Variable8| {
-            let read_condition = {
+    let if_address_in_range =
+        |current_block: &mut Rc<RefCell<BasicBlock>>,
+         address_range: RangeInclusive<u16>,
+         true_block_provider: fn(&mut BasicBlock, Variable16) -> Variable8,
+         false_value: Variable8|
+         -> Variable8 {
+            let exit_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
+                &variable_id_counter,
+            ))));
+            exit_block.borrow_mut().set_has_argument(true);
+
+            let condition = {
                 let lower_bound_condition = {
                     let start = current_block
                         .borrow_mut()
@@ -42,58 +49,81 @@ pub(super) fn compile_read(
                     .borrow_mut()
                     .define_1(lower_bound_condition & upper_bound_condition)
             };
-            let read_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
+            let true_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
                 &variable_id_counter,
             ))));
-            let read_value = read_block_instruction_provider(&mut read_block.borrow_mut(), address);
-            read_block.borrow_mut().jump = Jump::BasicBlock {
+            let true_value = true_block_provider(&mut true_block.borrow_mut(), address);
+            true_block.borrow_mut().jump = Jump::BasicBlock {
                 condition: r#true,
                 target_if_true: Rc::clone(&exit_block),
-                target_if_true_argument: Some(read_value),
+                target_if_true_argument: Some(true_value),
                 target_if_false: Rc::clone(&exit_block),
-                target_if_false_argument: Some(read_value),
+                target_if_false_argument: Some(true_value),
             };
-            let not_read_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
+
+            let false_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
                 &variable_id_counter,
             ))));
+            false_block.borrow_mut().jump = Jump::BasicBlock {
+                condition: r#true,
+                target_if_true: Rc::clone(&exit_block),
+                target_if_true_argument: Some(false_value),
+                target_if_false: Rc::clone(&exit_block),
+                target_if_false_argument: Some(false_value),
+            };
+
             current_block.borrow_mut().jump = Jump::BasicBlock {
-                condition: read_condition,
-                target_if_true: read_block,
+                condition,
+                target_if_true: true_block,
                 target_if_true_argument: None,
-                target_if_false: Rc::clone(&not_read_block),
+                target_if_false: false_block,
                 target_if_false_argument: None,
             };
 
-            *current_block = not_read_block;
+            let result = exit_block
+                .borrow_mut()
+                .define_8(Definition8::BasicBlockArgument);
+            *current_block = exit_block;
+            result
         };
 
-    compile_read_in_range(0x0..=0x7ff, |block, address| {
-        block.define_8(Definition8::CpuRam(address))
-    });
-    compile_read_in_range(0x2007..=0x2007, |block, _| {
-        let address = block.define_16(Definition16::PpuCurrentAddress);
-        block.define_8(Definition8::PpuRam(address))
-    });
-    compile_read_in_range(0x6000..=0x7fff, |block, address| {
-        block.define_8(Definition8::PrgRam(address))
-    });
-    compile_read_in_range(0x8000..=0xffff, |block, address| {
-        block.define_8(Definition8::Rom(address))
-    });
+    let value = current_block.borrow_mut().define_8(0.into());
+    let value = if_address_in_range(
+        current_block,
+        0x0..=0x7ff,
+        |block, address| block.define_8(Definition8::CpuRam(address)),
+        value,
+    );
+    let value = if_address_in_range(
+        current_block,
+        0x2007..=0x2007,
+        |block, _| {
+            let address = block.define_16(Definition16::PpuCurrentAddress);
+            block.define_8(Definition8::PpuRam(address))
+        },
+        value,
+    );
+    let value = if_address_in_range(
+        current_block,
+        0x6000..=0x7fff,
+        |block, address| block.define_8(Definition8::PrgRam(address)),
+        value,
+    );
+    let value = if_address_in_range(
+        current_block,
+        0x8000..=0xffff,
+        |block, address| block.define_8(Definition8::Rom(address)),
+        value,
+    );
 
-    // Default to a value of 0.
     current_block.borrow_mut().jump = Jump::BasicBlock {
         condition: r#true,
         target_if_true: Rc::clone(&exit_block),
-        target_if_true_argument: Some(n0),
-        target_if_false: Rc::clone(&exit_block),
-        target_if_false_argument: Some(n0),
+        target_if_true_argument: None,
+        target_if_false: exit_block,
+        target_if_false_argument: None,
     };
 
-    let value = exit_block
-        .borrow_mut()
-        .define_8(Definition8::BasicBlockArgument);
-    *current_block = exit_block;
     value
 }
 
