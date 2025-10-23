@@ -1,3 +1,4 @@
+mod abstract_instruction_compiler;
 mod instruction_compiler;
 mod instruction_decoder;
 mod memory_compiler;
