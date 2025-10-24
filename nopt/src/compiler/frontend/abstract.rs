@@ -28,21 +28,13 @@ impl Compiler {
                 let operand_1 = self.read_operand_u8();
                 let operand_carry = self.define_1(self.visitor.cpu_c());
 
-                let result = self.define_8(Definition8::Sum {
-                    operand_0,
-                    operand_1,
-                    operand_carry,
-                });
-                let result_carry = self.define_1(Definition1::SumCarry {
-                    operand_0,
-                    operand_1,
-                    operand_carry,
-                });
-                let result_overflow = self.define_1(Definition1::SumOverflow {
-                    operand_0,
-                    operand_1,
-                    operand_carry,
-                });
+                let result = self.visitor.add_u8(operand_0, operand_1, operand_carry);
+                let result_carry = self
+                    .visitor
+                    .add_u8_carry(operand_0, operand_1, operand_carry);
+                let result_overflow =
+                    self.visitor
+                        .add_u8_overflow(operand_0, operand_1, operand_carry);
 
                 self.store_8(self.visitor.cpu_a(), result);
                 self.store_1(self.visitor.cpu_c(), result_carry);
@@ -53,7 +45,7 @@ impl Compiler {
                 let operand_0 = self.define_8(self.visitor.cpu_a());
                 let operand_1 = self.read_operand_u8();
 
-                let result = self.define_8(operand_0 & operand_1);
+                let result = self.visitor.and(operand_0, operand_1);
 
                 self.store_8(self.visitor.cpu_a(), result);
                 self.set_nz(result);
@@ -62,11 +54,8 @@ impl Compiler {
                 let operand = self.read_operand_u8();
                 let operand_carry = self.define_1(false);
 
-                let result = self.define_8(Definition8::RotateLeft {
-                    operand,
-                    operand_carry,
-                });
-                let result_carry = self.define_1(Definition1::U8Bit { operand, index: 7 });
+                let result = self.visitor.rotate_left(operand, operand_carry);
+                let result_carry = self.visitor.get_bit(operand, 7);
 
                 self.write_operand_u8(result);
                 self.store_1(self.visitor.cpu_c(), result_carry);
@@ -77,11 +66,9 @@ impl Compiler {
                 let not_c = self.define_1(!c);
                 let address_if_true = self.read_operand_u16();
                 let address_if_false = self.define_16(self.cpu_instruction.address_end());
-                let jump_target = self.define_16(Definition16::Select {
-                    condition: not_c,
-                    result_if_true: address_if_true,
-                    result_if_false: address_if_false,
-                });
+                let jump_target = self
+                    .visitor
+                    .select(not_c, address_if_true, address_if_false);
 
                 jump = Some(Jump::CpuAddress(jump_target));
             }
@@ -90,11 +77,7 @@ impl Compiler {
                 let address_if_true = self.read_operand_u16();
                 let address_if_false = self.define_16(self.cpu_instruction.address_end());
 
-                let jump_target = self.define_16(Definition16::Select {
-                    condition: c,
-                    result_if_true: address_if_true,
-                    result_if_false: address_if_false,
-                });
+                let jump_target = self.visitor.select(c, address_if_true, address_if_false);
 
                 jump = Some(Jump::CpuAddress(jump_target));
             }
@@ -102,21 +85,17 @@ impl Compiler {
                 let z = self.define_1(self.visitor.cpu_z());
                 let address_if_true = self.read_operand_u16();
                 let address_if_false = self.define_16(self.cpu_instruction.address_end());
-                let jump_target = self.define_16(Definition16::Select {
-                    condition: z,
-                    result_if_true: address_if_true,
-                    result_if_false: address_if_false,
-                });
+                let jump_target = self.visitor.select(z, address_if_true, address_if_false);
 
                 jump = Some(Jump::CpuAddress(jump_target));
             }
             nes_assembly::Mnemonic::Bit => {
                 let operand = self.read_operand_u8();
-                let n = self.define_1(Definition1::U8Bit { operand, index: 7 });
-                let v = self.define_1(Definition1::U8Bit { operand, index: 6 });
+                let n = self.visitor.get_bit(operand, 7);
+                let v = self.visitor.get_bit(operand, 6);
                 let a = self.define_8(self.visitor.cpu_a());
                 let result = self.define_8(a & operand);
-                let z = self.define_1(Definition1::EqualToZero(result));
+                let z = self.visitor.is_zero(result);
 
                 self.store_1(self.visitor.cpu_n(), n);
                 self.store_1(self.visitor.cpu_v(), v);
@@ -126,11 +105,7 @@ impl Compiler {
                 let n = self.define_1(self.visitor.cpu_n());
                 let address_if_true = self.read_operand_u16();
                 let address_if_false = self.define_16(self.cpu_instruction.address_end());
-                let jump_target = self.define_16(Definition16::Select {
-                    condition: n,
-                    result_if_true: address_if_true,
-                    result_if_false: address_if_false,
-                });
+                let jump_target = self.visitor.select(n, address_if_true, address_if_false);
 
                 jump = Some(Jump::CpuAddress(jump_target));
             }
@@ -139,11 +114,9 @@ impl Compiler {
                 let not_z = self.define_1(!z);
                 let address_if_true = self.read_operand_u16();
                 let address_if_false = self.define_16(self.cpu_instruction.address_end());
-                let jump_target = self.define_16(Definition16::Select {
-                    condition: not_z,
-                    result_if_true: address_if_true,
-                    result_if_false: address_if_false,
-                });
+                let jump_target = self
+                    .visitor
+                    .select(not_z, address_if_true, address_if_false);
 
                 jump = Some(Jump::CpuAddress(jump_target));
             }
@@ -152,11 +125,9 @@ impl Compiler {
                 let not_n = self.define_1(!n);
                 let address_if_true = self.read_operand_u16();
                 let address_if_false = self.define_16(self.cpu_instruction.address_end());
-                let jump_target = self.define_16(Definition16::Select {
-                    condition: not_n,
-                    result_if_true: address_if_true,
-                    result_if_false: address_if_false,
-                });
+                let jump_target = self
+                    .visitor
+                    .select(not_n, address_if_true, address_if_false);
 
                 jump = Some(Jump::CpuAddress(jump_target));
             }
@@ -165,10 +136,7 @@ impl Compiler {
                 let n2 = self.define_16(2);
 
                 let pc = self.visitor.cpu_pc();
-                let pc_plus_two = self.define_16(Definition16::Sum {
-                    operand_0: pc,
-                    operand_1: n2,
-                });
+                let pc_plus_two = self.visitor.add_u16(pc, n2);
                 let irq_handler_address = self.define_16(0xfffe);
                 let irq_handler = self.read_u16_deref(irq_handler_address);
 
@@ -187,11 +155,9 @@ impl Compiler {
                 let not_v = self.define_1(!v);
                 let address_if_true = self.read_operand_u16();
                 let address_if_false = self.define_16(self.cpu_instruction.address_end());
-                let jump_target = self.define_16(Definition16::Select {
-                    condition: not_v,
-                    result_if_true: address_if_true,
-                    result_if_false: address_if_false,
-                });
+                let jump_target = self
+                    .visitor
+                    .select(not_v, address_if_true, address_if_false);
 
                 jump = Some(Jump::CpuAddress(jump_target));
             }
@@ -199,11 +165,7 @@ impl Compiler {
                 let v = self.define_1(self.visitor.cpu_v());
                 let address_if_true = self.read_operand_u16();
                 let address_if_false = self.define_16(self.cpu_instruction.address_end());
-                let jump_target = self.define_16(Definition16::Select {
-                    condition: v,
-                    result_if_true: address_if_true,
-                    result_if_false: address_if_false,
-                });
+                let jump_target = self.visitor.select(v, address_if_true, address_if_false);
 
                 jump = Some(Jump::CpuAddress(jump_target));
             }
@@ -232,17 +194,11 @@ impl Compiler {
                 let operand_1 = self.read_operand_u8();
                 let operand_borrow = self.define_1(false);
 
-                let result = self.define_8(Definition8::Difference {
-                    operand_0,
-                    operand_1,
-                    operand_borrow,
-                });
-                let result_borrow = self.define_1(Definition1::DifferenceBorrow {
-                    operand_0,
-                    operand_1,
-                    operand_borrow,
-                });
-                let result_carry = self.define_1(!result_borrow);
+                let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
+                let result_borrow = self
+                    .visitor
+                    .sub_borrow(operand_0, operand_1, operand_borrow);
+                let result_carry = self.visitor.not(result_borrow);
 
                 self.store_1(self.visitor.cpu_c(), result_carry);
                 self.set_nz(result);
@@ -252,16 +208,10 @@ impl Compiler {
                 let operand_1 = self.read_operand_u8();
                 let operand_borrow = self.define_1(false);
 
-                let result = self.define_8(Definition8::Difference {
-                    operand_0,
-                    operand_1,
-                    operand_borrow,
-                });
-                let result_borrow = self.define_1(Definition1::DifferenceBorrow {
-                    operand_0,
-                    operand_1,
-                    operand_borrow,
-                });
+                let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
+                let result_borrow = self
+                    .visitor
+                    .sub_borrow(operand_0, operand_1, operand_borrow);
                 let result_carry = self.define_1(!result_borrow);
 
                 self.store_1(self.visitor.cpu_c(), result_carry);
@@ -272,16 +222,10 @@ impl Compiler {
                 let operand_1 = self.read_operand_u8();
                 let operand_borrow = self.define_1(false);
 
-                let result = self.define_8(Definition8::Difference {
-                    operand_0,
-                    operand_1,
-                    operand_borrow,
-                });
-                let result_borrow = self.define_1(Definition1::DifferenceBorrow {
-                    operand_0,
-                    operand_1,
-                    operand_borrow,
-                });
+                let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
+                let result_borrow = self
+                    .visitor
+                    .sub_borrow(operand_0, operand_1, operand_borrow);
                 let result_carry = self.define_1(!result_borrow);
 
                 self.store_1(self.visitor.cpu_c(), result_carry);
@@ -292,11 +236,7 @@ impl Compiler {
                 let operand_1 = self.define_8(1);
                 let operand_borrow = self.define_1(false);
 
-                let result = self.define_8(Definition8::Difference {
-                    operand_0,
-                    operand_1,
-                    operand_borrow,
-                });
+                let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
 
                 self.write_operand_u8(result);
                 self.set_nz(result);
@@ -306,11 +246,7 @@ impl Compiler {
                 let operand_1 = self.define_8(1);
                 let operand_borrow = self.define_1(false);
 
-                let result = self.define_8(Definition8::Difference {
-                    operand_0,
-                    operand_1,
-                    operand_borrow,
-                });
+                let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
 
                 self.store_8(self.visitor.cpu_x(), result);
                 self.set_nz(result);
@@ -320,11 +256,7 @@ impl Compiler {
                 let operand_1 = self.define_8(1);
                 let operand_borrow = self.define_1(false);
 
-                let result = self.define_8(Definition8::Difference {
-                    operand_0,
-                    operand_1,
-                    operand_borrow,
-                });
+                let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
 
                 self.store_8(self.visitor.cpu_y(), result);
                 self.set_nz(result);
@@ -343,11 +275,7 @@ impl Compiler {
                 let operand_1 = self.define_8(1);
                 let operand_carry = self.define_1(false);
 
-                let result = self.define_8(Definition8::Sum {
-                    operand_0,
-                    operand_1,
-                    operand_carry,
-                });
+                let result = self.visitor.add_u8(operand_0, operand_1, operand_carry);
 
                 self.write_operand_u8(result);
                 self.set_nz(result);
@@ -357,11 +285,7 @@ impl Compiler {
                 let operand_1 = self.define_8(1);
                 let operand_carry = self.define_1(false);
 
-                let result = self.define_8(Definition8::Sum {
-                    operand_0,
-                    operand_1,
-                    operand_carry,
-                });
+                let result = self.visitor.add_u8(operand_0, operand_1, operand_carry);
 
                 self.store_8(self.visitor.cpu_x(), result);
                 self.set_nz(result);
@@ -371,11 +295,7 @@ impl Compiler {
                 let operand_1 = self.define_8(1);
                 let operand_carry = self.define_1(false);
 
-                let result = self.define_8(Definition8::Sum {
-                    operand_0,
-                    operand_1,
-                    operand_carry,
-                });
+                let result = self.visitor.add_u8(operand_0, operand_1, operand_carry);
 
                 self.store_8(self.visitor.cpu_y(), result);
                 self.set_nz(result);
@@ -389,10 +309,7 @@ impl Compiler {
                 let n2 = self.define_16(2);
 
                 let pc = self.visitor.cpu_pc();
-                let pc_plus_2 = self.define_16(Definition16::Sum {
-                    operand_0: pc,
-                    operand_1: n2,
-                });
+                let pc_plus_2 = self.visitor.add_u16(pc, n2);
                 let address = self.read_operand_u16();
 
                 self.push_u16(pc_plus_2);
@@ -420,12 +337,8 @@ impl Compiler {
                 let operand = self.read_operand_u8();
                 let operand_carry = self.define_1(false);
 
-                let result = self.define_8(Definition8::RotateRight {
-                    operand,
-                    operand_carry,
-                });
-
-                let result_carry = self.define_1(Definition1::U8Bit { operand, index: 0 });
+                let result = self.visitor.rotate_right(operand, operand_carry);
+                let result_carry = self.visitor.get_bit(operand, 0);
 
                 self.write_operand_u8(result);
                 self.store_1(self.visitor.cpu_c(), result_carry);
@@ -474,12 +387,8 @@ impl Compiler {
                 let operand = self.read_operand_u8();
                 let operand_carry = self.define_1(self.visitor.cpu_c());
 
-                let result = self.define_8(Definition8::RotateLeft {
-                    operand,
-                    operand_carry,
-                });
-
-                let result_carry = self.define_1(Definition1::U8Bit { operand, index: 7 });
+                let result = self.visitor.rotate_left(operand, operand_carry);
+                let result_carry = self.visitor.get_bit(operand, 7);
 
                 self.write_operand_u8(result);
                 self.store_1(self.visitor.cpu_c(), result_carry);
@@ -489,12 +398,8 @@ impl Compiler {
                 let operand = self.read_operand_u8();
                 let operand_carry = self.define_1(self.visitor.cpu_c());
 
-                let result = self.define_8(Definition8::RotateRight {
-                    operand,
-                    operand_carry,
-                });
-
-                let result_carry = self.define_1(Definition1::U8Bit { operand, index: 0 });
+                let result = self.visitor.rotate_right(operand, operand_carry);
+                let result_carry = self.visitor.get_bit(operand, 0);
 
                 self.write_operand_u8(result);
                 self.store_1(self.visitor.cpu_c(), result_carry);
@@ -513,10 +418,7 @@ impl Compiler {
                 let n1 = self.define_16(1);
 
                 let return_address_minus_1 = self.pop_u16();
-                let return_address = self.define_16(Definition16::Sum {
-                    operand_0: return_address_minus_1,
-                    operand_1: n1,
-                });
+                let return_address = self.visitor.add_u16(return_address_minus_1, n1);
 
                 jump = Some(Jump::CpuAddress(return_address));
             }
@@ -526,22 +428,14 @@ impl Compiler {
                 let operand_carry = self.define_1(self.visitor.cpu_c());
                 let operand_borrow = self.define_1(!operand_carry);
 
-                let result = self.define_8(Definition8::Difference {
-                    operand_0,
-                    operand_1,
-                    operand_borrow,
-                });
-                let result_borrow = self.define_1(Definition1::DifferenceBorrow {
-                    operand_0,
-                    operand_1,
-                    operand_borrow,
-                });
-                let result_carry = self.define_1(!result_borrow);
-                let result_overflow = self.define_1(Definition1::DifferenceOverflow {
-                    operand_0,
-                    operand_1,
-                    operand_borrow,
-                });
+                let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
+                let result_borrow = self
+                    .visitor
+                    .sub_borrow(operand_0, operand_1, operand_borrow);
+                let result_carry = self.visitor.not(result_borrow);
+                let result_overflow =
+                    self.visitor
+                        .sub_overflow(operand_0, operand_1, operand_borrow);
 
                 self.store_8(self.visitor.cpu_a(), result);
                 self.store_1(self.visitor.cpu_c(), result_carry);
@@ -634,13 +528,9 @@ impl Compiler {
 
         // intentionally apply page wrapping to the high byte address, matching the
         // behavior of the original hardware
-        let high_address_high = self.define_8(Definition8::HighByte(low_address));
-        let high_address_low = self.define_8(Definition8::LowByte(low_address));
-        let high_address_low = self.define_8(Definition8::Sum {
-            operand_0: high_address_low,
-            operand_1: n1,
-            operand_carry: r#false,
-        });
+        let high_address_high = self.visitor.high_byte(low_address);
+        let high_address_low = self.visitor.low_byte(low_address);
+        let high_address_low = self.visitor.add_u8(high_address_low, n1, r#false);
         let high_address = self.define_16(high_address_high % high_address_low);
 
         let low = cpu_memory::read(&mut self.visitor, low_address);
@@ -657,8 +547,8 @@ impl Compiler {
     }
 
     fn set_nz(&mut self, value: Variable8) {
-        let n = self.define_1(Definition1::Negative(value));
-        let z = self.define_1(Definition1::EqualToZero(value));
+        let n = self.visitor.is_negative(value);
+        let z = self.visitor.is_zero(value);
 
         self.store_1(self.visitor.cpu_n(), n);
         self.store_1(self.visitor.cpu_z(), z);
@@ -669,11 +559,7 @@ impl Compiler {
         let n1 = self.define_8(1);
 
         let s = self.define_8(self.visitor.cpu_s());
-        let s_minus_1 = self.define_8(Definition8::Difference {
-            operand_0: s,
-            operand_1: n1,
-            operand_borrow: r#false,
-        });
+        let s_minus_1 = self.visitor.sub(s, n1, r#false);
         let address = self.define_16(n1 % s);
 
         cpu_memory::write(&mut self.visitor, address, value);
@@ -681,8 +567,8 @@ impl Compiler {
     }
 
     fn push_u16(&mut self, value: Variable16) {
-        let low = self.define_8(Definition8::LowByte(value));
-        let high = self.define_8(Definition8::HighByte(value));
+        let low = self.visitor.low_byte(value);
+        let high = self.visitor.high_byte(value);
 
         self.push_u8(high);
         self.push_u8(low);
@@ -693,11 +579,7 @@ impl Compiler {
         let n1 = self.define_8(1);
 
         let s = self.define_8(self.visitor.cpu_s());
-        let s_plus_1 = self.define_8(Definition8::Sum {
-            operand_0: s,
-            operand_1: n1,
-            operand_carry: r#false,
-        });
+        let s_plus_1 = self.visitor.add_u8(s, n1, r#false);
         let result_address = self.define_16(n1 % s_plus_1);
         let result = cpu_memory::read(&mut self.visitor, result_address);
 
@@ -723,21 +605,15 @@ impl Compiler {
                 let x = self.define_8(self.visitor.cpu_x());
                 let operand_0 = self.define_16(self.cpu_instruction.operand_u16());
                 let operand_1 = self.define_16(n0 % x);
-                self.define_16(Definition16::Sum {
-                    operand_0,
-                    operand_1,
-                })
+                self.visitor.add_u16(operand_0, operand_1)
             }
             nes_assembly::AddressingMode::AbsoluteY => {
                 let n0 = self.define_8(0);
 
                 let y = self.define_8(self.visitor.cpu_y());
-                let y_u16 = self.define_16(Definition16::FromU8s { low: y, high: n0 });
+                let y_u16 = self.visitor.concatenate(n0, y);
                 let operand = self.define_16(self.cpu_instruction.operand_u16());
-                self.define_16(Definition16::Sum {
-                    operand_0: operand,
-                    operand_1: y_u16,
-                })
+                self.visitor.add_u16(operand, y_u16)
             }
             nes_assembly::AddressingMode::Accumulator
             | nes_assembly::AddressingMode::Immediate
@@ -747,15 +623,11 @@ impl Compiler {
             nes_assembly::AddressingMode::IndirectY => {
                 let n0 = self.define_8(0);
 
-                let operand =
-                    self.define_16(Definition16::Immediate(self.cpu_instruction.operand_u16()));
+                let operand = self.define_16(self.cpu_instruction.operand_u16());
                 let operand_0 = self.read_u16_deref(operand);
                 let y = self.define_8(self.visitor.cpu_y());
                 let operand_1 = self.define_16(n0 % y);
-                self.define_16(Definition16::Sum {
-                    operand_0,
-                    operand_1,
-                })
+                self.visitor.add_u16(operand_0, operand_1)
             }
             nes_assembly::AddressingMode::XIndirect => {
                 let r#false = self.define_1(false);
@@ -763,11 +635,7 @@ impl Compiler {
 
                 let x = self.define_8(self.visitor.cpu_x());
                 let operand = self.define_8(self.cpu_instruction.operand_u8());
-                let address = self.define_8(Definition8::Sum {
-                    operand_0: operand,
-                    operand_1: x,
-                    operand_carry: r#false,
-                });
+                let address = self.visitor.add_u8(operand, x, r#false);
                 let address = self.define_16(n0 % address);
                 self.read_u16_deref(address)
             }
@@ -776,11 +644,7 @@ impl Compiler {
                 let operand = self.define_8(self.cpu_instruction.operand_u8());
                 let x = self.define_8(self.visitor.cpu_x());
                 let r#false = self.define_1(false);
-                let address = self.define_8(Definition8::Sum {
-                    operand_0: operand,
-                    operand_1: x,
-                    operand_carry: r#false,
-                });
+                let address = self.visitor.add_u8(operand, x, r#false);
                 self.define_16(n0 % address)
             }
             nes_assembly::AddressingMode::ZeropageY => {
@@ -788,11 +652,7 @@ impl Compiler {
                 let operand = self.define_8(self.cpu_instruction.operand_u8());
                 let y = self.define_8(self.visitor.cpu_y());
                 let r#false = self.define_1(false);
-                let address = self.define_8(Definition8::Sum {
-                    operand_0: operand,
-                    operand_1: y,
-                    operand_carry: r#false,
-                });
+                let address = self.visitor.add_u8(operand, y, r#false);
                 self.define_16(n0 % address)
             }
         }
@@ -861,11 +721,11 @@ impl Compiler {
                 let address = self.define_16(self.cpu_instruction.operand_u16());
                 self.read_u16_deref(address)
             }
-            nes_assembly::AddressingMode::Relative => self.define_16(Definition16::Immediate(
+            nes_assembly::AddressingMode::Relative => self.define_16(
                 self.cpu_instruction
                     .address_end()
                     .wrapping_add_signed(i16::from(self.cpu_instruction.operand_i8())),
-            )),
+            ),
             _ => unreachable!(),
         }
     }

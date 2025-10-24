@@ -1,8 +1,6 @@
 use crate::compiler::{
     frontend::r#abstract::CompilerVisitor,
-    ir::{
-        Definition1, Definition8, Definition16, Destination8, Destination16, Variable8, Variable16,
-    },
+    ir::{Destination8, Destination16, Variable8, Variable16},
 };
 use std::ops::RangeInclusive;
 
@@ -16,11 +14,11 @@ pub(super) fn read(visitor: &mut CompilerVisitor, address: Variable16) -> Variab
             let condition = {
                 let lower_bound_condition = {
                     let start = visitor.define_16(*address_range.start());
-                    visitor.define_1(Definition1::LessThanOrEqual16(start, address))
+                    visitor.less_than_or_equal(start, address)
                 };
                 let upper_bound_condition = {
                     let end = visitor.define_16(*address_range.end());
-                    visitor.define_1(Definition1::LessThanOrEqual16(address, end))
+                    visitor.less_than_or_equal(address, end)
                 };
                 visitor.define_1(lower_bound_condition & upper_bound_condition)
             };
@@ -33,33 +31,18 @@ pub(super) fn read(visitor: &mut CompilerVisitor, address: Variable16) -> Variab
         };
 
     let value = visitor.define_8(0);
-    let value = if_address_in_range(
-        visitor,
-        0x0..=0x7ff,
-        |visitor, address| visitor.define_8(Definition8::CpuRam(address)),
-        value,
-    );
+    let value = if_address_in_range(visitor, 0x0..=0x7ff, CompilerVisitor::cpu_ram, value);
     let value = if_address_in_range(
         visitor,
         0x2007..=0x2007,
         |visitor, _| {
-            let address = visitor.define_16(Definition16::PpuCurrentAddress);
-            visitor.define_8(Definition8::PpuRam(address))
+            let address = visitor.ppu_current_address();
+            visitor.ppu_ram(address)
         },
         value,
     );
-    let value = if_address_in_range(
-        visitor,
-        0x6000..=0x7fff,
-        |visitor, address| visitor.define_8(Definition8::PrgRam(address)),
-        value,
-    );
-    if_address_in_range(
-        visitor,
-        0x8000..=0xffff,
-        |visitor, address| visitor.define_8(Definition8::Rom(address)),
-        value,
-    )
+    let value = if_address_in_range(visitor, 0x6000..=0x7fff, CompilerVisitor::prg_ram, value);
+    if_address_in_range(visitor, 0x8000..=0xffff, CompilerVisitor::rom, value)
 }
 
 pub(super) fn write(visitor: &mut CompilerVisitor, address: Variable16, value: Variable8) {
@@ -69,11 +52,11 @@ pub(super) fn write(visitor: &mut CompilerVisitor, address: Variable16, value: V
             let condition = {
                 let lower_bound_condition = {
                     let start = visitor.define_16(*range.start());
-                    visitor.define_1(Definition1::LessThanOrEqual16(start, address))
+                    visitor.less_than_or_equal(start, address)
                 };
                 let upper_bound_condition = {
                     let end = visitor.define_16(*range.end());
-                    visitor.define_1(Definition1::LessThanOrEqual16(address, end))
+                    visitor.less_than_or_equal(address, end)
                 };
                 visitor.define_1(lower_bound_condition & upper_bound_condition)
             };
@@ -89,14 +72,14 @@ pub(super) fn write(visitor: &mut CompilerVisitor, address: Variable16, value: V
         visitor.store_8(Destination8::CpuRam(address), value);
     });
     if_address_in_range(0x2006..=0x2006, |visitor, _, value| {
-        let old_address = visitor.define_16(Definition16::PpuCurrentAddress);
-        let new_address_high = visitor.define_8(Definition8::LowByte(old_address));
+        let old_address = visitor.ppu_current_address();
+        let new_address_high = visitor.low_byte(old_address);
         let new_address_low = value;
-        let new_address = visitor.define_16(new_address_high % new_address_low);
+        let new_address = visitor.concatenate(new_address_high, new_address_low);
         visitor.store_16(Destination16::PpuCurrentAddress, new_address);
     });
     if_address_in_range(0x2007..=0x2007, |visitor, _, value| {
-        let address = visitor.define_16(Definition16::PpuCurrentAddress);
+        let address = visitor.ppu_current_address();
         visitor.store_8(Destination8::PpuRam(address), value);
     });
     if_address_in_range(0x6000..=0x7fff, |visitor, address, value| {

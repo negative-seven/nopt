@@ -90,6 +90,174 @@ impl CompilerVisitor {
         self.define_16(Definition16::Pc)
     }
 
+    fn ppu_current_address(&mut self) -> Variable16 {
+        self.define_16(Definition16::PpuCurrentAddress)
+    }
+
+    fn cpu_ram(&mut self, address: Variable16) -> Variable8 {
+        self.define_8(Definition8::CpuRam(address))
+    }
+
+    fn prg_ram(&mut self, address: Variable16) -> Variable8 {
+        self.define_8(Definition8::PrgRam(address))
+    }
+
+    fn ppu_ram(&mut self, address: Variable16) -> Variable8 {
+        self.define_8(Definition8::PpuRam(address))
+    }
+
+    fn rom(&mut self, address: Variable16) -> Variable8 {
+        self.define_8(Definition8::Rom(address))
+    }
+
+    fn get_bit(&mut self, operand: Variable8, index: u8) -> Variable1 {
+        self.define_1(Definition1::U8Bit { operand, index })
+    }
+
+    fn not(&mut self, operand: Variable1) -> Variable1 {
+        self.define_1(Definition1::Not(operand))
+    }
+
+    fn is_zero(&mut self, operand: Variable8) -> Variable1 {
+        self.define_1(Definition1::EqualToZero(operand))
+    }
+
+    fn is_negative(&mut self, operand: Variable8) -> Variable1 {
+        self.define_1(Definition1::Negative(operand))
+    }
+
+    fn rotate_left(&mut self, operand: Variable8, operand_carry: Variable1) -> Variable8 {
+        self.define_8(Definition8::RotateLeft {
+            operand,
+            operand_carry,
+        })
+    }
+
+    fn rotate_right(&mut self, operand: Variable8, operand_carry: Variable1) -> Variable8 {
+        self.define_8(Definition8::RotateRight {
+            operand,
+            operand_carry,
+        })
+    }
+
+    fn low_byte(&mut self, operand: Variable16) -> Variable8 {
+        self.define_8(Definition8::LowByte(operand))
+    }
+
+    fn high_byte(&mut self, operand: Variable16) -> Variable8 {
+        self.define_8(Definition8::HighByte(operand))
+    }
+
+    fn less_than_or_equal(&mut self, operand_0: Variable16, operand_1: Variable16) -> Variable1 {
+        self.define_1(Definition1::LessThanOrEqual16(operand_0, operand_1))
+    }
+
+    fn select(
+        &mut self,
+        condition: Variable1,
+        result_if_true: Variable16,
+        result_if_false: Variable16,
+    ) -> Variable16 {
+        self.define_16(Definition16::Select {
+            condition,
+            result_if_true,
+            result_if_false,
+        })
+    }
+
+    fn concatenate(&mut self, high: Variable8, low: Variable8) -> Variable16 {
+        self.define_16(Definition16::FromU8s { high, low })
+    }
+
+    pub(crate) fn and(&mut self, operand_0: Variable8, operand_1: Variable8) -> Variable8 {
+        self.define_8(Definition8::And(operand_0, operand_1))
+    }
+
+    pub(crate) fn add_u8(
+        &mut self,
+        operand_0: Variable8,
+        operand_1: Variable8,
+        operand_carry: Variable1,
+    ) -> Variable8 {
+        self.define_8(Definition8::Sum {
+            operand_0,
+            operand_1,
+            operand_carry,
+        })
+    }
+
+    pub(crate) fn add_u8_carry(
+        &mut self,
+        operand_0: Variable8,
+        operand_1: Variable8,
+        operand_carry: Variable1,
+    ) -> Variable1 {
+        self.define_1(Definition1::SumCarry {
+            operand_0,
+            operand_1,
+            operand_carry,
+        })
+    }
+
+    pub(crate) fn add_u8_overflow(
+        &mut self,
+        operand_0: Variable8,
+        operand_1: Variable8,
+        operand_carry: Variable1,
+    ) -> Variable1 {
+        self.define_1(Definition1::SumOverflow {
+            operand_0,
+            operand_1,
+            operand_carry,
+        })
+    }
+
+    fn add_u16(&mut self, operand_0: Variable16, operand_1: Variable16) -> Variable16 {
+        self.define_16(Definition16::Sum {
+            operand_0,
+            operand_1,
+        })
+    }
+
+    fn sub(
+        &mut self,
+        operand_0: Variable8,
+        operand_1: Variable8,
+        operand_borrow: Variable1,
+    ) -> Variable8 {
+        self.define_8(Definition8::Difference {
+            operand_0,
+            operand_1,
+            operand_borrow,
+        })
+    }
+
+    fn sub_borrow(
+        &mut self,
+        operand_0: Variable8,
+        operand_1: Variable8,
+        operand_borrow: Variable1,
+    ) -> Variable1 {
+        self.define_1(Definition1::DifferenceBorrow {
+            operand_0,
+            operand_1,
+            operand_borrow,
+        })
+    }
+
+    fn sub_overflow(
+        &mut self,
+        operand_0: Variable8,
+        operand_1: Variable8,
+        operand_borrow: Variable1,
+    ) -> Variable1 {
+        self.define_1(Definition1::DifferenceOverflow {
+            operand_0,
+            operand_1,
+            operand_borrow,
+        })
+    }
+
     pub(crate) fn define_1(&mut self, definition: impl Into<Definition1>) -> Variable1 {
         self.current_block.borrow_mut().define_1(definition.into())
     }
