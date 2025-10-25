@@ -333,10 +333,6 @@ impl Visitor for CompilerVisitor {
         self.define_1(Definition1::EqualToZero(operand))
     }
 
-    fn is_negative(&mut self, operand: Variable8) -> Variable1 {
-        self.define_1(Definition1::Negative(operand))
-    }
-
     fn rotate_left(&mut self, operand: Variable8, operand_carry: Variable1) -> Variable8 {
         self.define_8(Definition8::RotateLeft {
             operand,

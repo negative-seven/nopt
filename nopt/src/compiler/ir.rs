@@ -212,7 +212,6 @@ pub(crate) enum Definition1 {
     Not(Variable1),
     And(Variable1, Variable1),
     EqualToZero(Variable8),
-    Negative(Variable8),
     U8Bit {
         operand: Variable8,
         index: u8,
@@ -247,7 +246,6 @@ impl Debug for Definition1 {
             Self::Not(register_u1) => write!(f, "!{register_u1:?}"),
             Self::And(operand_0, operand_1) => write!(f, "({operand_0:?} & {operand_1:?})"),
             Self::EqualToZero(u8) => write!(f, "({u8:?} == 0)"),
-            Self::Negative(u8) => write!(f, "({u8:?} >= 0x80)"),
             Self::U8Bit { operand, index } => write!(f, "{operand:?}.bit({index})"),
             Self::LessThanOrEqual16(operand_0, operand_1) => {
                 write!(f, "({operand_0:?} <= {operand_1:?})")

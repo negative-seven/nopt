@@ -515,7 +515,7 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
     }
 
     fn set_nz(&mut self, value: Visitor::U8) {
-        let n = self.visitor.is_negative(value);
+        let n = self.visitor.get_bit(value, 7);
         let z = self.visitor.is_zero(value);
 
         self.visitor.set_cpu_n(n);

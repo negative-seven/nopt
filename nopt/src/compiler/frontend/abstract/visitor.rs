@@ -90,8 +90,6 @@ pub(crate) trait Visitor: Sized {
 
     fn is_zero(&mut self, operand: Self::U8) -> Self::U1;
 
-    fn is_negative(&mut self, operand: Self::U8) -> Self::U1;
-
     fn rotate_left(&mut self, operand: Self::U8, operand_carry: Self::U1) -> Self::U8;
 
     fn rotate_right(&mut self, operand: Self::U8, operand_carry: Self::U1) -> Self::U8;

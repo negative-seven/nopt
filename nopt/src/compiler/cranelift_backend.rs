@@ -201,11 +201,6 @@ impl Compiler {
                             self.value_8(*variable),
                             0,
                         ),
-                        ir::Definition1::Negative(variable) => function_builder.ins().icmp_imm(
-                            IntCC::UnsignedGreaterThanOrEqual,
-                            self.value_8(*variable),
-                            0x80,
-                        ),
                         ir::Definition1::U8Bit { operand, index } => {
                             let value = function_builder
                                 .ins()
