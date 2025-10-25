@@ -438,16 +438,11 @@ impl Debug for Variable16 {
 
 #[derive(Clone)]
 pub(crate) enum Definition16 {
-    Immediate(u16),
     Pc,
     PpuCurrentAddress,
     FromU8s {
         high: Variable8,
         low: Variable8,
-    },
-    Sum {
-        operand_0: Variable16,
-        operand_1: Variable16,
     },
     Select {
         condition: Variable1,
@@ -459,14 +454,9 @@ pub(crate) enum Definition16 {
 impl Debug for Definition16 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Immediate(immediate) => write!(f, "0x{immediate:04x}"),
             Self::Pc => write!(f, "pc"),
             Self::PpuCurrentAddress => write!(f, "ppu_current_address"),
             Self::FromU8s { low, high } => write!(f, "({high:?} % {low:?})"),
-            Self::Sum {
-                operand_0,
-                operand_1,
-            } => write!(f, "({operand_0:?} + {operand_1:?})"),
             Self::Select {
                 condition,
                 result_if_true,

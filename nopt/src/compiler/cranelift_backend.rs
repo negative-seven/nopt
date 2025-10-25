@@ -451,9 +451,6 @@ impl Compiler {
                     definition,
                 } => {
                     let value = match definition {
-                        ir::Definition16::Immediate(immediate) => function_builder
-                            .ins()
-                            .iconst(type_u16, i64::from(*immediate)),
                         ir::Definition16::Pc => function_builder.ins().load(
                             type_u16,
                             MemFlags::new(),
@@ -473,15 +470,6 @@ impl Compiler {
                             let high = function_builder.ins().ishl_imm(high, 8);
                             let low = function_builder.ins().uextend(type_u16, self.value_8(*low));
                             function_builder.ins().bor(high, low)
-                        }
-                        ir::Definition16::Sum {
-                            operand_0,
-                            operand_1,
-                        } => {
-                            function_builder
-                                .ins()
-                                .uadd_overflow(self.value_16(*operand_0), self.value_16(*operand_1))
-                                .0
                         }
                         ir::Definition16::Select {
                             condition,

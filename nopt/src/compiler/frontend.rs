@@ -52,22 +52,10 @@ impl Visitor for CompilerVisitor {
     type U8 = Variable8;
     type U16 = Variable16;
 
-    fn immediate_u1(&mut self, value: bool) -> Variable1 {
-        self.current_block
-            .borrow_mut()
-            .define_1(Definition1::Immediate(value))
-    }
-
     fn immediate_u8(&mut self, value: u8) -> Variable8 {
         self.current_block
             .borrow_mut()
             .define_8(Definition8::Immediate(value))
-    }
-
-    fn immediate_u16(&mut self, value: u16) -> Variable16 {
-        self.current_block
-            .borrow_mut()
-            .define_16(Definition16::Immediate(value))
     }
 
     fn cpu_c(&self) -> Variable1 {
@@ -447,13 +435,6 @@ impl Visitor for CompilerVisitor {
             operand_0,
             operand_1,
             operand_carry,
-        })
-    }
-
-    fn add_u16(&mut self, operand_0: Variable16, operand_1: Variable16) -> Variable16 {
-        self.define_16(Definition16::Sum {
-            operand_0,
-            operand_1,
         })
     }
 
