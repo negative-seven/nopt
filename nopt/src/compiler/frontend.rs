@@ -375,7 +375,11 @@ impl CompilerVisitor {
         self.define_8(Definition8::Or(operand_0, operand_1))
     }
 
-    pub(crate) fn and(&mut self, operand_0: Variable8, operand_1: Variable8) -> Variable8 {
+    pub(crate) fn and_u1(&mut self, operand_0: Variable1, operand_1: Variable1) -> Variable1 {
+        self.define_1(Definition1::And(operand_0, operand_1))
+    }
+
+    pub(crate) fn and_u8(&mut self, operand_0: Variable8, operand_1: Variable8) -> Variable8 {
         self.define_8(Definition8::And(operand_0, operand_1))
     }
 

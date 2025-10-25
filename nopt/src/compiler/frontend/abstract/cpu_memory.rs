@@ -20,7 +20,7 @@ pub(super) fn read(visitor: &mut CompilerVisitor, address: Variable16) -> Variab
                     let end = visitor.immediate_u16(*address_range.end());
                     visitor.less_than_or_equal(address, end)
                 };
-                visitor.define_1(lower_bound_condition & upper_bound_condition)
+                visitor.and_u1(lower_bound_condition, upper_bound_condition)
             };
 
             visitor.if_else_with_result(
@@ -58,7 +58,7 @@ pub(super) fn write(visitor: &mut CompilerVisitor, address: Variable16, value: V
                     let end = visitor.immediate_u16(*range.end());
                     visitor.less_than_or_equal(address, end)
                 };
-                visitor.define_1(lower_bound_condition & upper_bound_condition)
+                visitor.and_u1(lower_bound_condition, upper_bound_condition)
             };
 
             visitor.if_else(

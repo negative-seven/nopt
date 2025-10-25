@@ -42,7 +42,7 @@ impl Compiler {
                 let operand_0 = self.visitor.cpu_a();
                 let operand_1 = self.read_operand_u8();
 
-                let result = self.visitor.and(operand_0, operand_1);
+                let result = self.visitor.and_u8(operand_0, operand_1);
 
                 self.visitor.set_cpu_a(result);
                 self.set_nz(result);
@@ -97,7 +97,7 @@ impl Compiler {
                 let n = self.visitor.get_bit(operand, 7);
                 let v = self.visitor.get_bit(operand, 6);
                 let a = self.visitor.cpu_a();
-                let result = self.visitor.and(a, operand);
+                let result = self.visitor.and_u8(a, operand);
                 let z = self.visitor.is_zero(result);
 
                 self.visitor.set_cpu_n(n);
