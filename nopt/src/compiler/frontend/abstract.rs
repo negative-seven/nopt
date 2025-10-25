@@ -1,20 +1,16 @@
 mod cpu_memory;
+mod visitor;
 
-use crate::{
-    compiler::{
-        frontend::CompilerVisitor,
-        ir::{CpuFlag, Variable8, Variable16},
-    },
-    nes_assembly,
-};
+use crate::{compiler::ir::CpuFlag, nes_assembly};
 use tracing::warn;
+pub(crate) use visitor::Visitor;
 
-pub(crate) struct Compiler {
-    pub(crate) visitor: CompilerVisitor,
+pub(crate) struct Compiler<Visitor: super::Visitor> {
+    pub(crate) visitor: Visitor,
     pub(crate) cpu_instruction: nes_assembly::Instruction,
 }
 
-impl Compiler {
+impl<Visitor: super::Visitor> Compiler<Visitor> {
     #[expect(clippy::too_many_lines)]
     pub(crate) fn transpile(mut self) {
         let mut jump_target = None;
@@ -510,7 +506,7 @@ impl Compiler {
         self.visitor.jump(jump);
     }
 
-    fn read_u16_deref(&mut self, cpu_address: Variable16) -> Variable16 {
+    fn read_u16_deref(&mut self, cpu_address: Visitor::U16) -> Visitor::U16 {
         let r#false = self.visitor.immediate_u1(false);
         let n1 = self.visitor.immediate_u8(1);
 
@@ -530,7 +526,7 @@ impl Compiler {
         self.visitor.concatenate(high, low)
     }
 
-    fn set_nz(&mut self, value: Variable8) {
+    fn set_nz(&mut self, value: Visitor::U8) {
         let n = self.visitor.is_negative(value);
         let z = self.visitor.is_zero(value);
 
@@ -538,7 +534,7 @@ impl Compiler {
         self.visitor.set_cpu_z(z);
     }
 
-    fn push_u8(&mut self, value: Variable8) {
+    fn push_u8(&mut self, value: Visitor::U8) {
         let r#false = self.visitor.immediate_u1(false);
         let n1 = self.visitor.immediate_u8(1);
 
@@ -550,7 +546,7 @@ impl Compiler {
         self.visitor.set_cpu_s(s_minus_1);
     }
 
-    fn push_u16(&mut self, value: Variable16) {
+    fn push_u16(&mut self, value: Visitor::U16) {
         let low = self.visitor.low_byte(value);
         let high = self.visitor.high_byte(value);
 
@@ -558,7 +554,7 @@ impl Compiler {
         self.push_u8(low);
     }
 
-    fn pop_u8(&mut self) -> Variable8 {
+    fn pop_u8(&mut self) -> Visitor::U8 {
         let r#false = self.visitor.immediate_u1(false);
         let n1 = self.visitor.immediate_u8(1);
 
@@ -571,14 +567,14 @@ impl Compiler {
         result
     }
 
-    fn pop_u16(&mut self) -> Variable16 {
+    fn pop_u16(&mut self) -> Visitor::U16 {
         let low = self.pop_u8();
         let high = self.pop_u8();
 
         self.visitor.concatenate(high, low)
     }
 
-    fn get_operand_address(&mut self) -> Variable16 {
+    fn get_operand_address(&mut self) -> Visitor::U16 {
         match self.cpu_instruction.operation().addressing_mode() {
             nes_assembly::AddressingMode::Absolute | nes_assembly::AddressingMode::Zeropage => self
                 .visitor
@@ -648,7 +644,7 @@ impl Compiler {
         }
     }
 
-    fn read_operand_u8(&mut self) -> Variable8 {
+    fn read_operand_u8(&mut self) -> Visitor::U8 {
         match self.cpu_instruction.operation().addressing_mode() {
             nes_assembly::AddressingMode::Absolute
             | nes_assembly::AddressingMode::Zeropage
@@ -673,7 +669,7 @@ impl Compiler {
         }
     }
 
-    fn write_operand_u8(&mut self, variable: Variable8) {
+    fn write_operand_u8(&mut self, variable: Visitor::U8) {
         match self.cpu_instruction.operation().addressing_mode() {
             nes_assembly::AddressingMode::Absolute
             | nes_assembly::AddressingMode::Zeropage
@@ -698,7 +694,7 @@ impl Compiler {
         }
     }
 
-    fn read_operand_u16(&mut self) -> Variable16 {
+    fn read_operand_u16(&mut self) -> Visitor::U16 {
         match self.cpu_instruction.operation().addressing_mode() {
             nes_assembly::AddressingMode::Absolute => self
                 .visitor

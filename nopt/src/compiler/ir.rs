@@ -167,7 +167,7 @@ impl CpuFlag {
 }
 
 #[derive(Clone, Copy)]
-pub(super) struct Variable1 {
+pub(crate) struct Variable1 {
     pub id: usize,
 }
 
@@ -177,7 +177,7 @@ impl Debug for Variable1 {
     }
 }
 
-pub(super) enum Definition1 {
+pub(crate) enum Definition1 {
     Immediate(bool),
     CpuFlag(CpuFlag),
     Not(Variable1),
@@ -316,7 +316,7 @@ impl Debug for Destination1 {
 }
 
 #[derive(Clone, Copy)]
-pub(super) struct Variable8 {
+pub(crate) struct Variable8 {
     pub id: usize,
 }
 
@@ -348,7 +348,7 @@ impl Debug for CpuRegister {
 }
 
 #[derive(Clone)]
-pub(super) enum Definition8 {
+pub(crate) enum Definition8 {
     BasicBlockArgument,
     Immediate(u8),
     CpuRegister(CpuRegister),
@@ -491,7 +491,7 @@ impl Debug for Destination8 {
 }
 
 #[derive(Clone, Copy)]
-pub(super) struct Variable16 {
+pub(crate) struct Variable16 {
     pub id: usize,
 }
 
@@ -502,7 +502,7 @@ impl Debug for Variable16 {
 }
 
 #[derive(Clone)]
-pub(super) enum Definition16 {
+pub(crate) enum Definition16 {
     Immediate(u16),
     Pc,
     PpuCurrentAddress,
