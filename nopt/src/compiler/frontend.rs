@@ -499,8 +499,8 @@ impl Visitor for CompilerVisitor {
     fn if_else(
         &mut self,
         condition: Variable1,
-        visit_true: impl Fn(&mut CompilerVisitor),
-        visit_false: impl Fn(&mut CompilerVisitor),
+        visit_true: impl Fn(CompilerVisitor),
+        visit_false: impl Fn(CompilerVisitor),
     ) {
         let unused_variable = self.define_8(Definition8::Immediate(0));
         self.if_else_with_result(
@@ -519,8 +519,8 @@ impl Visitor for CompilerVisitor {
     fn if_else_with_result(
         &mut self,
         condition: Variable1,
-        visit_true: impl Fn(&mut CompilerVisitor) -> Variable8,
-        visit_false: impl Fn(&mut CompilerVisitor) -> Variable8,
+        visit_true: impl Fn(CompilerVisitor) -> Variable8,
+        visit_false: impl Fn(CompilerVisitor) -> Variable8,
     ) -> Variable8 {
         let r#true = self.define_1(Definition1::Immediate(true));
 
@@ -534,11 +534,10 @@ impl Visitor for CompilerVisitor {
         let true_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
             &variable_id_counter,
         ))));
-        let mut true_block_visitor = CompilerVisitor {
-            current_block: true_block,
+        let true_block_visitor = CompilerVisitor {
+            current_block: Rc::clone(&true_block),
         };
-        let true_value = visit_true(&mut true_block_visitor);
-        let true_block = true_block_visitor.current_block;
+        let true_value = visit_true(true_block_visitor);
         true_block.borrow_mut().jump = Jump::BasicBlock {
             condition: r#true,
             target_if_true: Rc::clone(&exit_block),
@@ -550,11 +549,10 @@ impl Visitor for CompilerVisitor {
         let false_block = Rc::new(RefCell::new(BasicBlock::new(Rc::clone(
             &variable_id_counter,
         ))));
-        let mut false_block_visitor = CompilerVisitor {
-            current_block: false_block,
+        let false_block_visitor = CompilerVisitor {
+            current_block: Rc::clone(&false_block),
         };
-        let false_value = visit_false(&mut false_block_visitor);
-        let false_block = false_block_visitor.current_block;
+        let false_value = visit_false(false_block_visitor);
         false_block.borrow_mut().jump = Jump::BasicBlock {
             condition: r#true,
             target_if_true: Rc::clone(&exit_block),

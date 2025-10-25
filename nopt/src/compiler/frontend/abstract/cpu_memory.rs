@@ -6,7 +6,7 @@ pub(super) fn read<Visitor: super::Visitor>(
 ) -> Visitor::U8 {
     let if_address_in_range = |visitor: &mut Visitor,
                                address_range: RangeInclusive<u16>,
-                               visit_true_block: fn(&mut Visitor, Visitor::U16) -> Visitor::U8,
+                               visit_true_block: fn(Visitor, Visitor::U16) -> Visitor::U8,
                                false_value: Visitor::U8|
      -> Visitor::U8 {
         let condition = {
@@ -29,18 +29,33 @@ pub(super) fn read<Visitor: super::Visitor>(
     };
 
     let value = visitor.immediate_u8(0);
-    let value = if_address_in_range(visitor, 0x0..=0x7ff, Visitor::cpu_ram, value);
+    let value = if_address_in_range(
+        visitor,
+        0x0..=0x7ff,
+        |mut visitor, address| visitor.cpu_ram(address),
+        value,
+    );
     let value = if_address_in_range(
         visitor,
         0x2007..=0x2007,
-        |visitor, _| {
+        |mut visitor, _| {
             let address = visitor.ppu_current_address();
             visitor.ppu_ram(address)
         },
         value,
     );
-    let value = if_address_in_range(visitor, 0x6000..=0x7fff, Visitor::prg_ram, value);
-    if_address_in_range(visitor, 0x8000..=0xffff, Visitor::rom, value)
+    let value = if_address_in_range(
+        visitor,
+        0x6000..=0x7fff,
+        |mut visitor, address| visitor.prg_ram(address),
+        value,
+    );
+    if_address_in_range(
+        visitor,
+        0x8000..=0xffff,
+        |mut visitor, address| visitor.rom(address),
+        value,
+    )
 }
 
 pub(super) fn write<Visitor: super::Visitor>(
@@ -49,8 +64,7 @@ pub(super) fn write<Visitor: super::Visitor>(
     value: Visitor::U8,
 ) {
     let mut if_address_in_range =
-        |range: RangeInclusive<u16>,
-         visit_true_block: fn(&mut Visitor, Visitor::U16, Visitor::U8)| {
+        |range: RangeInclusive<u16>, visit_true_block: fn(Visitor, Visitor::U16, Visitor::U8)| {
             let condition = {
                 let lower_bound_condition = {
                     let start = visitor.immediate_u16(*range.start());
@@ -73,14 +87,14 @@ pub(super) fn write<Visitor: super::Visitor>(
     if_address_in_range(0x0..=0x7ff, |visitor, address, value| {
         visitor.set_cpu_ram(address, value);
     });
-    if_address_in_range(0x2006..=0x2006, |visitor, _, value| {
+    if_address_in_range(0x2006..=0x2006, |mut visitor, _, value| {
         let old_address = visitor.ppu_current_address();
         let new_address_high = visitor.low_byte(old_address);
         let new_address_low = value;
         let new_address = visitor.concatenate(new_address_high, new_address_low);
         visitor.set_ppu_current_address(new_address);
     });
-    if_address_in_range(0x2007..=0x2007, |visitor, _, value| {
+    if_address_in_range(0x2007..=0x2007, |mut visitor, _, value| {
         let address = visitor.ppu_current_address();
         visitor.set_ppu_ram(address, value);
     });

@@ -1,4 +1,4 @@
-pub(crate) trait Visitor {
+pub(crate) trait Visitor: Sized {
     type U1: Copy;
     type U8: Copy;
     type U16: Copy;
@@ -159,15 +159,15 @@ pub(crate) trait Visitor {
     fn if_else(
         &mut self,
         condition: Self::U1,
-        visit_true: impl Fn(&mut Self),
-        visit_false: impl Fn(&mut Self),
+        visit_true: impl Fn(Self),
+        visit_false: impl Fn(Self),
     );
 
     fn if_else_with_result(
         &mut self,
         condition: Self::U1,
-        visit_true: impl Fn(&mut Self) -> Self::U8,
-        visit_false: impl Fn(&mut Self) -> Self::U8,
+        visit_true: impl Fn(Self) -> Self::U8,
+        visit_false: impl Fn(Self) -> Self::U8,
     ) -> Self::U8;
 
     fn jump(self, address: Self::U16);
