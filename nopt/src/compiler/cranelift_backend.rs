@@ -178,9 +178,6 @@ impl Compiler {
                     definition,
                 } => {
                     let value = match definition {
-                        ir::Definition1::Immediate(immediate) => function_builder
-                            .ins()
-                            .iconst(type_u8, i64::from(*immediate)),
                         ir::Definition1::CpuFlag(cpu_flag) => {
                             let value = function_builder.ins().load(
                                 type_u8,

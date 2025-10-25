@@ -503,7 +503,7 @@ impl Visitor for CompilerVisitor {
         visit_true: impl Fn(CompilerVisitor) -> Variable8,
         visit_false: impl Fn(CompilerVisitor) -> Variable8,
     ) -> Variable8 {
-        let r#true = self.define_1(Definition1::Immediate(true));
+        let r#true = self.immediate_u1(true);
 
         let variable_id_counter = Rc::clone(&self.current_block.borrow().variable_id_counter);
 

@@ -208,7 +208,6 @@ impl Debug for Variable1 {
 }
 
 pub(crate) enum Definition1 {
-    Immediate(bool),
     CpuFlag(CpuFlag),
     Not(Variable1),
     And(Variable1, Variable1),
@@ -244,7 +243,6 @@ pub(crate) enum Definition1 {
 impl Debug for Definition1 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Immediate(immediate) => write!(f, "{}", u8::from(*immediate)),
             Self::CpuFlag(flag) => write!(f, "{flag:?}"),
             Self::Not(register_u1) => write!(f, "!{register_u1:?}"),
             Self::And(operand_0, operand_1) => write!(f, "({operand_0:?} & {operand_1:?})"),
