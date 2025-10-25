@@ -75,32 +75,7 @@ impl Compiler {
     fn trace_ir_basic_block(basic_block: &Rc<RefCell<ir::BasicBlock>>) {
         trace!("ir: block start");
         for instruction in &basic_block.borrow().instructions {
-            match instruction {
-                ir::Instruction::Define1 {
-                    variable,
-                    definition,
-                } => trace!("ir: {variable:?} = {definition:?}"),
-                ir::Instruction::Define8 {
-                    variable,
-                    definition,
-                } => trace!("ir: {variable:?} = {definition:?}"),
-                ir::Instruction::Define16 {
-                    variable,
-                    definition,
-                } => trace!("ir: {variable:?} = {definition:?}"),
-                ir::Instruction::Store1 {
-                    destination,
-                    variable,
-                } => trace!("ir: {destination:?} = {variable:?}"),
-                ir::Instruction::Store8 {
-                    destination,
-                    variable,
-                } => trace!("ir: {destination:?} = {variable:?}"),
-                ir::Instruction::Store16 {
-                    destination,
-                    variable,
-                } => trace!("ir: {destination:?} = {variable:?}"),
-            }
+            trace!("ir: {instruction:?}");
         }
         trace!("ir: {:?}", basic_block.borrow().jump);
     }

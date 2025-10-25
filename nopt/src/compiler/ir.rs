@@ -92,6 +92,37 @@ pub(super) enum Instruction {
     },
 }
 
+impl Debug for Instruction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Define1 {
+                variable,
+                definition,
+            } => write!(f, "{variable:?} = {definition:?}"),
+            Self::Define8 {
+                variable,
+                definition,
+            } => write!(f, "{variable:?} = {definition:?}"),
+            Self::Define16 {
+                variable,
+                definition,
+            } => write!(f, "{variable:?} = {definition:?}"),
+            Self::Store1 {
+                destination,
+                variable,
+            } => write!(f, "{destination:?} = {variable:?}"),
+            Self::Store8 {
+                destination,
+                variable,
+            } => write!(f, "{destination:?} = {variable:?}"),
+            Self::Store16 {
+                destination,
+                variable,
+            } => write!(f, "{destination:?} = {variable:?}"),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub(crate) enum Jump {
     BasicBlock {
