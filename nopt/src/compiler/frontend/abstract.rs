@@ -1,4 +1,5 @@
 mod cpu_memory;
+mod ppu;
 mod visitor;
 
 use crate::{compiler::ir::CpuFlag, nes_assembly};

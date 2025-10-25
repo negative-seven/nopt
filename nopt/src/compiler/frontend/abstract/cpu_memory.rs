@@ -1,5 +1,7 @@
 use std::ops::RangeInclusive;
 
+use crate::compiler::frontend::r#abstract::ppu;
+
 pub(super) fn read<Visitor: super::Visitor>(
     visitor: &mut Visitor,
     address: Visitor::U16,
@@ -38,10 +40,7 @@ pub(super) fn read<Visitor: super::Visitor>(
     let value = if_address_in_range(
         visitor,
         0x2007..=0x2007,
-        |mut visitor, _| {
-            let address = visitor.ppu_current_address();
-            visitor.ppu_ram(address)
-        },
+        |mut visitor, _| ppu::read_ppudata(&mut visitor),
         value,
     );
     let value = if_address_in_range(
@@ -88,15 +87,10 @@ pub(super) fn write<Visitor: super::Visitor>(
         visitor.set_cpu_ram(address, value);
     });
     if_address_in_range(0x2006..=0x2006, |mut visitor, _, value| {
-        let old_address = visitor.ppu_current_address();
-        let new_address_high = visitor.low_byte(old_address);
-        let new_address_low = value;
-        let new_address = visitor.concatenate(new_address_high, new_address_low);
-        visitor.set_ppu_current_address(new_address);
+        ppu::write_ppuaddr(&mut visitor, value);
     });
     if_address_in_range(0x2007..=0x2007, |mut visitor, _, value| {
-        let address = visitor.ppu_current_address();
-        visitor.set_ppu_ram(address, value);
+        ppu::write_ppudata(&mut visitor, value);
     });
     if_address_in_range(0x6000..=0x7fff, |visitor, address, value| {
         visitor.set_prg_ram(address, value);
