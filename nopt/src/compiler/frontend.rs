@@ -34,6 +34,24 @@ pub(crate) struct CompilerVisitor {
 }
 
 impl CompilerVisitor {
+    pub(crate) fn immediate_u1(&mut self, value: bool) -> Variable1 {
+        self.current_block
+            .borrow_mut()
+            .define_1(Definition1::Immediate(value))
+    }
+
+    pub(crate) fn immediate_u8(&mut self, value: u8) -> Variable8 {
+        self.current_block
+            .borrow_mut()
+            .define_8(Definition8::Immediate(value))
+    }
+
+    pub(crate) fn immediate_u16(&mut self, value: u16) -> Variable16 {
+        self.current_block
+            .borrow_mut()
+            .define_16(Definition16::Immediate(value))
+    }
+
     pub(crate) fn cpu_c(&self) -> Destination1 {
         Destination1::CpuFlag(CpuFlag::C)
     }

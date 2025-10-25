@@ -51,7 +51,7 @@ impl Compiler {
             }
             nes_assembly::Mnemonic::Asl => {
                 let operand = self.read_operand_u8();
-                let operand_carry = self.define_1(false);
+                let operand_carry = self.visitor.immediate_u1(false);
 
                 let result = self.visitor.rotate_left(operand, operand_carry);
                 let result_carry = self.visitor.get_bit(operand, 7);
@@ -64,7 +64,9 @@ impl Compiler {
                 let c = self.define_1(self.visitor.cpu_c());
                 let not_c = self.define_1(!c);
                 let address_if_true = self.read_operand_u16();
-                let address_if_false = self.define_16(self.cpu_instruction.address_end());
+                let address_if_false = self
+                    .visitor
+                    .immediate_u16(self.cpu_instruction.address_end());
                 let jump_target = self
                     .visitor
                     .select(not_c, address_if_true, address_if_false);
@@ -74,7 +76,9 @@ impl Compiler {
             nes_assembly::Mnemonic::Bcs => {
                 let c = self.define_1(self.visitor.cpu_c());
                 let address_if_true = self.read_operand_u16();
-                let address_if_false = self.define_16(self.cpu_instruction.address_end());
+                let address_if_false = self
+                    .visitor
+                    .immediate_u16(self.cpu_instruction.address_end());
 
                 let jump_target = self.visitor.select(c, address_if_true, address_if_false);
 
@@ -83,7 +87,9 @@ impl Compiler {
             nes_assembly::Mnemonic::Beq => {
                 let z = self.define_1(self.visitor.cpu_z());
                 let address_if_true = self.read_operand_u16();
-                let address_if_false = self.define_16(self.cpu_instruction.address_end());
+                let address_if_false = self
+                    .visitor
+                    .immediate_u16(self.cpu_instruction.address_end());
                 let jump_target = self.visitor.select(z, address_if_true, address_if_false);
 
                 jump = Some(Jump::CpuAddress(jump_target));
@@ -103,7 +109,9 @@ impl Compiler {
             nes_assembly::Mnemonic::Bmi => {
                 let n = self.define_1(self.visitor.cpu_n());
                 let address_if_true = self.read_operand_u16();
-                let address_if_false = self.define_16(self.cpu_instruction.address_end());
+                let address_if_false = self
+                    .visitor
+                    .immediate_u16(self.cpu_instruction.address_end());
                 let jump_target = self.visitor.select(n, address_if_true, address_if_false);
 
                 jump = Some(Jump::CpuAddress(jump_target));
@@ -112,7 +120,9 @@ impl Compiler {
                 let z = self.define_1(self.visitor.cpu_z());
                 let not_z = self.define_1(!z);
                 let address_if_true = self.read_operand_u16();
-                let address_if_false = self.define_16(self.cpu_instruction.address_end());
+                let address_if_false = self
+                    .visitor
+                    .immediate_u16(self.cpu_instruction.address_end());
                 let jump_target = self
                     .visitor
                     .select(not_z, address_if_true, address_if_false);
@@ -123,7 +133,9 @@ impl Compiler {
                 let n = self.define_1(self.visitor.cpu_n());
                 let not_n = self.define_1(!n);
                 let address_if_true = self.read_operand_u16();
-                let address_if_false = self.define_16(self.cpu_instruction.address_end());
+                let address_if_false = self
+                    .visitor
+                    .immediate_u16(self.cpu_instruction.address_end());
                 let jump_target = self
                     .visitor
                     .select(not_n, address_if_true, address_if_false);
@@ -131,12 +143,12 @@ impl Compiler {
                 jump = Some(Jump::CpuAddress(jump_target));
             }
             nes_assembly::Mnemonic::Brk => {
-                let r#true = self.define_1(true);
-                let n2 = self.define_16(2);
+                let r#true = self.visitor.immediate_u1(true);
+                let n2 = self.visitor.immediate_u16(2);
 
                 let pc = self.visitor.cpu_pc();
                 let pc_plus_two = self.visitor.add_u16(pc, n2);
-                let irq_handler_address = self.define_16(0xfffe);
+                let irq_handler_address = self.visitor.immediate_u16(0xfffe);
                 let irq_handler = self.read_u16_deref(irq_handler_address);
 
                 self.visitor.set_cpu_unused_flag(r#true);
@@ -153,7 +165,9 @@ impl Compiler {
                 let v = self.define_1(self.visitor.cpu_v());
                 let not_v = self.define_1(!v);
                 let address_if_true = self.read_operand_u16();
-                let address_if_false = self.define_16(self.cpu_instruction.address_end());
+                let address_if_false = self
+                    .visitor
+                    .immediate_u16(self.cpu_instruction.address_end());
                 let jump_target = self
                     .visitor
                     .select(not_v, address_if_true, address_if_false);
@@ -163,35 +177,37 @@ impl Compiler {
             nes_assembly::Mnemonic::Bvs => {
                 let v = self.define_1(self.visitor.cpu_v());
                 let address_if_true = self.read_operand_u16();
-                let address_if_false = self.define_16(self.cpu_instruction.address_end());
+                let address_if_false = self
+                    .visitor
+                    .immediate_u16(self.cpu_instruction.address_end());
                 let jump_target = self.visitor.select(v, address_if_true, address_if_false);
 
                 jump = Some(Jump::CpuAddress(jump_target));
             }
             nes_assembly::Mnemonic::Clc => {
-                let r#false = self.define_1(false);
+                let r#false = self.visitor.immediate_u1(false);
 
                 self.visitor.set_cpu_c(r#false);
             }
             nes_assembly::Mnemonic::Cld => {
-                let r#false = self.define_1(false);
+                let r#false = self.visitor.immediate_u1(false);
 
                 self.visitor.set_cpu_d(r#false);
             }
             nes_assembly::Mnemonic::Cli => {
-                let r#false = self.define_1(false);
+                let r#false = self.visitor.immediate_u1(false);
 
                 self.visitor.set_cpu_i(r#false);
             }
             nes_assembly::Mnemonic::Clv => {
-                let r#false = self.define_1(false);
+                let r#false = self.visitor.immediate_u1(false);
 
                 self.visitor.set_cpu_v(r#false);
             }
             nes_assembly::Mnemonic::Cmp => {
                 let operand_0 = self.define_8(self.visitor.cpu_a());
                 let operand_1 = self.read_operand_u8();
-                let operand_borrow = self.define_1(false);
+                let operand_borrow = self.visitor.immediate_u1(false);
 
                 let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
                 let result_borrow = self
@@ -205,7 +221,7 @@ impl Compiler {
             nes_assembly::Mnemonic::Cpx => {
                 let operand_0 = self.define_8(self.visitor.cpu_x());
                 let operand_1 = self.read_operand_u8();
-                let operand_borrow = self.define_1(false);
+                let operand_borrow = self.visitor.immediate_u1(false);
 
                 let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
                 let result_borrow = self
@@ -219,7 +235,7 @@ impl Compiler {
             nes_assembly::Mnemonic::Cpy => {
                 let operand_0 = self.define_8(self.visitor.cpu_y());
                 let operand_1 = self.read_operand_u8();
-                let operand_borrow = self.define_1(false);
+                let operand_borrow = self.visitor.immediate_u1(false);
 
                 let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
                 let result_borrow = self
@@ -232,8 +248,8 @@ impl Compiler {
             }
             nes_assembly::Mnemonic::Dec => {
                 let operand_0 = self.read_operand_u8();
-                let operand_1 = self.define_8(1);
-                let operand_borrow = self.define_1(false);
+                let operand_1 = self.visitor.immediate_u8(1);
+                let operand_borrow = self.visitor.immediate_u1(false);
 
                 let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
 
@@ -242,8 +258,8 @@ impl Compiler {
             }
             nes_assembly::Mnemonic::Dex => {
                 let operand_0 = self.define_8(self.visitor.cpu_x());
-                let operand_1 = self.define_8(1);
-                let operand_borrow = self.define_1(false);
+                let operand_1 = self.visitor.immediate_u8(1);
+                let operand_borrow = self.visitor.immediate_u1(false);
 
                 let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
 
@@ -252,8 +268,8 @@ impl Compiler {
             }
             nes_assembly::Mnemonic::Dey => {
                 let operand_0 = self.define_8(self.visitor.cpu_y());
-                let operand_1 = self.define_8(1);
-                let operand_borrow = self.define_1(false);
+                let operand_1 = self.visitor.immediate_u8(1);
+                let operand_borrow = self.visitor.immediate_u1(false);
 
                 let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
 
@@ -271,8 +287,8 @@ impl Compiler {
             }
             nes_assembly::Mnemonic::Inc => {
                 let operand_0 = self.read_operand_u8();
-                let operand_1 = self.define_8(1);
-                let operand_carry = self.define_1(false);
+                let operand_1 = self.visitor.immediate_u8(1);
+                let operand_carry = self.visitor.immediate_u1(false);
 
                 let result = self.visitor.add_u8(operand_0, operand_1, operand_carry);
 
@@ -281,8 +297,8 @@ impl Compiler {
             }
             nes_assembly::Mnemonic::Inx => {
                 let operand_0 = self.define_8(self.visitor.cpu_x());
-                let operand_1 = self.define_8(1);
-                let operand_carry = self.define_1(false);
+                let operand_1 = self.visitor.immediate_u8(1);
+                let operand_carry = self.visitor.immediate_u1(false);
 
                 let result = self.visitor.add_u8(operand_0, operand_1, operand_carry);
 
@@ -291,8 +307,8 @@ impl Compiler {
             }
             nes_assembly::Mnemonic::Iny => {
                 let operand_0 = self.define_8(self.visitor.cpu_y());
-                let operand_1 = self.define_8(1);
-                let operand_carry = self.define_1(false);
+                let operand_1 = self.visitor.immediate_u8(1);
+                let operand_carry = self.visitor.immediate_u1(false);
 
                 let result = self.visitor.add_u8(operand_0, operand_1, operand_carry);
 
@@ -305,7 +321,7 @@ impl Compiler {
                 jump = Some(Jump::CpuAddress(address));
             }
             nes_assembly::Mnemonic::Jsr => {
-                let n2 = self.define_16(2);
+                let n2 = self.visitor.immediate_u16(2);
 
                 let pc = self.visitor.cpu_pc();
                 let pc_plus_2 = self.visitor.add_u16(pc, n2);
@@ -334,7 +350,7 @@ impl Compiler {
             }
             nes_assembly::Mnemonic::Lsr => {
                 let operand = self.read_operand_u8();
-                let operand_carry = self.define_1(false);
+                let operand_carry = self.visitor.immediate_u1(false);
 
                 let result = self.visitor.rotate_right(operand, operand_carry);
                 let result_carry = self.visitor.get_bit(operand, 0);
@@ -359,8 +375,9 @@ impl Compiler {
                 self.push_u8(value);
             }
             nes_assembly::Mnemonic::Php => {
-                let set_flags_mask =
-                    self.define_8((1 << CpuFlag::Unused.index()) | (1 << CpuFlag::B.index()));
+                let set_flags_mask = self
+                    .visitor
+                    .immediate_u8((1 << CpuFlag::Unused.index()) | (1 << CpuFlag::B.index()));
 
                 let value = self.define_8(self.visitor.cpu_p());
                 let value = self.define_8(value | set_flags_mask);
@@ -414,7 +431,7 @@ impl Compiler {
                 jump = Some(Jump::CpuAddress(return_address));
             }
             nes_assembly::Mnemonic::Rts => {
-                let n1 = self.define_16(1);
+                let n1 = self.visitor.immediate_u16(1);
 
                 let return_address_minus_1 = self.pop_u16();
                 let return_address = self.visitor.add_u16(return_address_minus_1, n1);
@@ -442,15 +459,15 @@ impl Compiler {
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Sec => {
-                let r#true = self.define_1(true);
+                let r#true = self.visitor.immediate_u1(true);
                 self.visitor.set_cpu_c(r#true);
             }
             nes_assembly::Mnemonic::Sed => {
-                let r#true = self.define_1(true);
+                let r#true = self.visitor.immediate_u1(true);
                 self.visitor.set_cpu_d(r#true);
             }
             nes_assembly::Mnemonic::Sei => {
-                let r#true = self.define_1(true);
+                let r#true = self.visitor.immediate_u1(true);
                 self.visitor.set_cpu_i(r#true);
             }
             nes_assembly::Mnemonic::Sta => {
@@ -520,8 +537,8 @@ impl Compiler {
     }
 
     fn read_u16_deref(&mut self, cpu_address: Variable16) -> Variable16 {
-        let r#false = self.define_1(false);
-        let n1 = self.define_8(1);
+        let r#false = self.visitor.immediate_u1(false);
+        let n1 = self.visitor.immediate_u8(1);
 
         let low_address = cpu_address;
 
@@ -546,8 +563,8 @@ impl Compiler {
     }
 
     fn push_u8(&mut self, value: Variable8) {
-        let r#false = self.define_1(false);
-        let n1 = self.define_8(1);
+        let r#false = self.visitor.immediate_u1(false);
+        let n1 = self.visitor.immediate_u8(1);
 
         let s = self.define_8(self.visitor.cpu_s());
         let s_minus_1 = self.visitor.sub(s, n1, r#false);
@@ -566,8 +583,8 @@ impl Compiler {
     }
 
     fn pop_u8(&mut self) -> Variable8 {
-        let r#false = self.define_1(false);
-        let n1 = self.define_8(1);
+        let r#false = self.visitor.immediate_u1(false);
+        let n1 = self.visitor.immediate_u8(1);
 
         let s = self.define_8(self.visitor.cpu_s());
         let s_plus_1 = self.visitor.add_u8(s, n1, r#false);
@@ -591,7 +608,7 @@ impl Compiler {
                 self.define_16(self.cpu_instruction.operand_u16())
             }
             nes_assembly::AddressingMode::AbsoluteX => {
-                let n0 = self.define_8(0);
+                let n0 = self.visitor.immediate_u8(0);
 
                 let x = self.define_8(self.visitor.cpu_x());
                 let operand_0 = self.define_16(self.cpu_instruction.operand_u16());
@@ -599,7 +616,7 @@ impl Compiler {
                 self.visitor.add_u16(operand_0, operand_1)
             }
             nes_assembly::AddressingMode::AbsoluteY => {
-                let n0 = self.define_8(0);
+                let n0 = self.visitor.immediate_u8(0);
 
                 let y = self.define_8(self.visitor.cpu_y());
                 let y_u16 = self.visitor.concatenate(n0, y);
@@ -612,7 +629,7 @@ impl Compiler {
             | nes_assembly::AddressingMode::Indirect
             | nes_assembly::AddressingMode::Relative => unreachable!(),
             nes_assembly::AddressingMode::IndirectY => {
-                let n0 = self.define_8(0);
+                let n0 = self.visitor.immediate_u8(0);
 
                 let operand = self.define_16(self.cpu_instruction.operand_u16());
                 let operand_0 = self.read_u16_deref(operand);
@@ -621,8 +638,8 @@ impl Compiler {
                 self.visitor.add_u16(operand_0, operand_1)
             }
             nes_assembly::AddressingMode::XIndirect => {
-                let r#false = self.define_1(false);
-                let n0 = self.define_8(0);
+                let r#false = self.visitor.immediate_u1(false);
+                let n0 = self.visitor.immediate_u8(0);
 
                 let x = self.define_8(self.visitor.cpu_x());
                 let operand = self.define_8(self.cpu_instruction.operand_u8());
@@ -631,18 +648,18 @@ impl Compiler {
                 self.read_u16_deref(address)
             }
             nes_assembly::AddressingMode::ZeropageX => {
-                let n0 = self.define_8(0);
+                let n0 = self.visitor.immediate_u8(0);
                 let operand = self.define_8(self.cpu_instruction.operand_u8());
                 let x = self.define_8(self.visitor.cpu_x());
-                let r#false = self.define_1(false);
+                let r#false = self.visitor.immediate_u1(false);
                 let address = self.visitor.add_u8(operand, x, r#false);
                 self.define_16(n0 % address)
             }
             nes_assembly::AddressingMode::ZeropageY => {
-                let n0 = self.define_8(0);
+                let n0 = self.visitor.immediate_u8(0);
                 let operand = self.define_8(self.cpu_instruction.operand_u8());
                 let y = self.define_8(self.visitor.cpu_y());
-                let r#false = self.define_1(false);
+                let r#false = self.visitor.immediate_u1(false);
                 let address = self.visitor.add_u8(operand, y, r#false);
                 self.define_16(n0 % address)
             }

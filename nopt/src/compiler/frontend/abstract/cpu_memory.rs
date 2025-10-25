@@ -13,11 +13,11 @@ pub(super) fn read(visitor: &mut CompilerVisitor, address: Variable16) -> Variab
          -> Variable8 {
             let condition = {
                 let lower_bound_condition = {
-                    let start = visitor.define_16(*address_range.start());
+                    let start = visitor.immediate_u16(*address_range.start());
                     visitor.less_than_or_equal(start, address)
                 };
                 let upper_bound_condition = {
-                    let end = visitor.define_16(*address_range.end());
+                    let end = visitor.immediate_u16(*address_range.end());
                     visitor.less_than_or_equal(address, end)
                 };
                 visitor.define_1(lower_bound_condition & upper_bound_condition)
@@ -30,7 +30,7 @@ pub(super) fn read(visitor: &mut CompilerVisitor, address: Variable16) -> Variab
             )
         };
 
-    let value = visitor.define_8(0);
+    let value = visitor.immediate_u8(0);
     let value = if_address_in_range(visitor, 0x0..=0x7ff, CompilerVisitor::cpu_ram, value);
     let value = if_address_in_range(
         visitor,
@@ -51,11 +51,11 @@ pub(super) fn write(visitor: &mut CompilerVisitor, address: Variable16, value: V
          visit_true_block: fn(&mut CompilerVisitor, Variable16, Variable8)| {
             let condition = {
                 let lower_bound_condition = {
-                    let start = visitor.define_16(*range.start());
+                    let start = visitor.immediate_u16(*range.start());
                     visitor.less_than_or_equal(start, address)
                 };
                 let upper_bound_condition = {
-                    let end = visitor.define_16(*range.end());
+                    let end = visitor.immediate_u16(*range.end());
                     visitor.less_than_or_equal(address, end)
                 };
                 visitor.define_1(lower_bound_condition & upper_bound_condition)
