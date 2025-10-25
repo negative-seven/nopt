@@ -502,7 +502,7 @@ impl Visitor for CompilerVisitor {
         visit_true: impl Fn(&mut CompilerVisitor),
         visit_false: impl Fn(&mut CompilerVisitor),
     ) {
-        let unused_variable = self.define_8(0);
+        let unused_variable = self.define_8(Definition8::Immediate(0));
         self.if_else_with_result(
             condition,
             |block| {
@@ -522,7 +522,7 @@ impl Visitor for CompilerVisitor {
         visit_true: impl Fn(&mut CompilerVisitor) -> Variable8,
         visit_false: impl Fn(&mut CompilerVisitor) -> Variable8,
     ) -> Variable8 {
-        let r#true = self.define_1(true);
+        let r#true = self.define_1(Definition1::Immediate(true));
 
         let variable_id_counter = Rc::clone(&self.current_block.borrow().variable_id_counter);
 

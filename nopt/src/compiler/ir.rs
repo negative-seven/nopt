@@ -1,7 +1,6 @@
 use std::{
     cell::RefCell,
     fmt::Debug,
-    ops::{BitAnd, BitOr, BitXor, Not, Rem},
     rc::Rc,
     sync::atomic::{AtomicUsize, Ordering},
 };
@@ -167,21 +166,6 @@ pub(super) enum CpuFlag {
     N,
 }
 
-impl Debug for CpuFlag {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::C => write!(f, "c"),
-            Self::Z => write!(f, "z"),
-            Self::I => write!(f, "i"),
-            Self::D => write!(f, "d"),
-            Self::B => write!(f, "b"),
-            Self::Unused => write!(f, "unused_flag"),
-            Self::V => write!(f, "v"),
-            Self::N => write!(f, "n"),
-        }
-    }
-}
-
 impl CpuFlag {
     pub(super) fn index(&self) -> u8 {
         match self {
@@ -193,6 +177,21 @@ impl CpuFlag {
             CpuFlag::Unused => 5,
             CpuFlag::V => 6,
             CpuFlag::N => 7,
+        }
+    }
+}
+
+impl Debug for CpuFlag {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::C => write!(f, "c"),
+            Self::Z => write!(f, "z"),
+            Self::I => write!(f, "i"),
+            Self::D => write!(f, "d"),
+            Self::B => write!(f, "b"),
+            Self::Unused => write!(f, "unused_flag"),
+            Self::V => write!(f, "v"),
+            Self::N => write!(f, "n"),
         }
     }
 }
@@ -240,42 +239,6 @@ pub(crate) enum Definition1 {
         operand_1: Variable8,
         operand_borrow: Variable1,
     },
-}
-
-impl From<bool> for Definition1 {
-    fn from(value: bool) -> Self {
-        Self::Immediate(value)
-    }
-}
-
-impl From<CpuFlag> for Definition1 {
-    fn from(value: CpuFlag) -> Self {
-        Self::CpuFlag(value)
-    }
-}
-
-impl Not for Variable1 {
-    type Output = Definition1;
-
-    fn not(self) -> Self::Output {
-        Self::Output::Not(self)
-    }
-}
-
-impl BitAnd for Variable1 {
-    type Output = Definition1;
-
-    fn bitand(self, rhs: Self) -> Self::Output {
-        Self::Output::And(self, rhs)
-    }
-}
-
-impl From<Destination1> for Definition1 {
-    fn from(value: Destination1) -> Self {
-        match value {
-            Destination1::CpuFlag(cpu_flag) => Definition1::CpuFlag(cpu_flag),
-        }
-    }
 }
 
 impl Debug for Definition1 {
@@ -330,12 +293,6 @@ impl Debug for Definition1 {
 #[derive(Clone)]
 pub(super) enum Destination1 {
     CpuFlag(CpuFlag),
-}
-
-impl From<CpuFlag> for Destination1 {
-    fn from(value: CpuFlag) -> Self {
-        Self::CpuFlag(value)
-    }
 }
 
 impl Debug for Destination1 {
@@ -412,53 +369,6 @@ pub(crate) enum Definition8 {
     },
 }
 
-impl From<u8> for Definition8 {
-    fn from(value: u8) -> Self {
-        Self::Immediate(value)
-    }
-}
-
-impl From<CpuRegister> for Definition8 {
-    fn from(value: CpuRegister) -> Self {
-        Self::CpuRegister(value)
-    }
-}
-
-impl BitOr for Variable8 {
-    type Output = Definition8;
-
-    fn bitor(self, rhs: Self) -> Self::Output {
-        Self::Output::Or(self, rhs)
-    }
-}
-
-impl BitAnd for Variable8 {
-    type Output = Definition8;
-
-    fn bitand(self, rhs: Self) -> Self::Output {
-        Self::Output::And(self, rhs)
-    }
-}
-
-impl BitXor for Variable8 {
-    type Output = Definition8;
-
-    fn bitxor(self, rhs: Self) -> Self::Output {
-        Self::Output::Xor(self, rhs)
-    }
-}
-
-impl From<Destination8> for Definition8 {
-    fn from(value: Destination8) -> Self {
-        match value {
-            Destination8::CpuRegister(cpu_register) => Definition8::CpuRegister(cpu_register),
-            Destination8::CpuRam(address) => Definition8::CpuRam(address),
-            Destination8::PpuRam(address) => Definition8::PpuRam(address),
-            Destination8::PrgRam(address) => Definition8::PrgRam(address),
-        }
-    }
-}
-
 impl Debug for Definition8 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -504,12 +414,6 @@ pub(super) enum Destination8 {
     PrgRam(Variable16),
 }
 
-impl From<CpuRegister> for Destination8 {
-    fn from(value: CpuRegister) -> Self {
-        Self::CpuRegister(value)
-    }
-}
-
 impl Debug for Destination8 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -550,31 +454,6 @@ pub(crate) enum Definition16 {
         result_if_true: Variable16,
         result_if_false: Variable16,
     },
-}
-
-impl From<u16> for Definition16 {
-    fn from(value: u16) -> Self {
-        Self::Immediate(value)
-    }
-}
-
-impl Rem for Variable8 {
-    type Output = Definition16;
-
-    fn rem(self, rhs: Self) -> Self::Output {
-        Self::Output::FromU8s {
-            low: rhs,
-            high: self,
-        }
-    }
-}
-
-impl From<Destination16> for Definition16 {
-    fn from(value: Destination16) -> Self {
-        match value {
-            Destination16::PpuCurrentAddress => Definition16::PpuCurrentAddress,
-        }
-    }
 }
 
 impl Debug for Definition16 {
