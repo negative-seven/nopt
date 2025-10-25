@@ -119,21 +119,31 @@ pub(crate) trait Visitor: Sized {
 
     fn xor(&mut self, operand_0: Self::U8, operand_1: Self::U8) -> Self::U8;
 
-    fn add_u8(
+    fn add_u8(&mut self, operand_0: Self::U8, operand_1: Self::U8) -> Self::U8 {
+        let r#false = self.immediate_u1(false);
+        self.add_with_carry_u8(operand_0, operand_1, r#false)
+    }
+
+    fn add_with_carry_u8(
         &mut self,
         operand_0: Self::U8,
         operand_1: Self::U8,
         operand_carry: Self::U1,
     ) -> Self::U8;
 
-    fn add_u8_carry(
+    fn add_u8_carry(&mut self, operand_0: Self::U8, operand_1: Self::U8) -> Self::U1 {
+        let r#false = self.immediate_u1(false);
+        self.add_with_carry_u8_carry(operand_0, operand_1, r#false)
+    }
+
+    fn add_with_carry_u8_carry(
         &mut self,
         operand_0: Self::U8,
         operand_1: Self::U8,
         operand_carry: Self::U1,
     ) -> Self::U1;
 
-    fn add_u8_overflow(
+    fn add_with_carry_u8_overflow(
         &mut self,
         operand_0: Self::U8,
         operand_1: Self::U8,
@@ -141,35 +151,43 @@ pub(crate) trait Visitor: Sized {
     ) -> Self::U1;
 
     fn add_u16(&mut self, operand_0: Self::U16, operand_1: Self::U16) -> Self::U16 {
-        let r#false = self.immediate_u1(false);
-
         let operand_0_low = self.low_byte(operand_0);
         let operand_1_low = self.low_byte(operand_1);
-        let result_low = self.add_u8(operand_0_low, operand_1_low, r#false);
-        let carry = self.add_u8_carry(operand_0_low, operand_1_low, r#false);
+        let result_low = self.add_u8(operand_0_low, operand_1_low);
+        let carry = self.add_u8_carry(operand_0_low, operand_1_low);
 
         let operand_0_high = self.high_byte(operand_0);
         let operand_1_high = self.high_byte(operand_1);
-        let result_high = self.add_u8(operand_0_high, operand_1_high, carry);
+        let result_high = self.add_with_carry_u8(operand_0_high, operand_1_high, carry);
 
         self.concatenate(result_high, result_low)
     }
 
-    fn sub(
+    fn sub(&mut self, operand_0: Self::U8, operand_1: Self::U8) -> Self::U8 {
+        let r#false = self.immediate_u1(false);
+        self.sub_with_borrow(operand_0, operand_1, r#false)
+    }
+
+    fn sub_with_borrow(
         &mut self,
         operand_0: Self::U8,
         operand_1: Self::U8,
         operand_borrow: Self::U1,
     ) -> Self::U8;
 
-    fn sub_borrow(
+    fn sub_borrow(&mut self, operand_0: Self::U8, operand_1: Self::U8) -> Self::U1 {
+        let r#false = self.immediate_u1(false);
+        self.sub_with_borrow_borrow(operand_0, operand_1, r#false)
+    }
+
+    fn sub_with_borrow_borrow(
         &mut self,
         operand_0: Self::U8,
         operand_1: Self::U8,
         operand_borrow: Self::U1,
     ) -> Self::U1;
 
-    fn sub_overflow(
+    fn sub_with_borrow_overflow(
         &mut self,
         operand_0: Self::U8,
         operand_1: Self::U8,

@@ -21,13 +21,15 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
                 let operand_1 = self.read_operand_u8();
                 let operand_carry = self.visitor.cpu_c();
 
-                let result = self.visitor.add_u8(operand_0, operand_1, operand_carry);
-                let result_carry = self
+                let result = self
                     .visitor
-                    .add_u8_carry(operand_0, operand_1, operand_carry);
+                    .add_with_carry_u8(operand_0, operand_1, operand_carry);
+                let result_carry =
+                    self.visitor
+                        .add_with_carry_u8_carry(operand_0, operand_1, operand_carry);
                 let result_overflow =
                     self.visitor
-                        .add_u8_overflow(operand_0, operand_1, operand_carry);
+                        .add_with_carry_u8_overflow(operand_0, operand_1, operand_carry);
 
                 self.visitor.set_cpu_a(result);
                 self.visitor.set_cpu_c(result_carry);
@@ -188,12 +190,9 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
             nes_assembly::Mnemonic::Cmp => {
                 let operand_0 = self.visitor.cpu_a();
                 let operand_1 = self.read_operand_u8();
-                let operand_borrow = self.visitor.immediate_u1(false);
 
-                let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
-                let result_borrow = self
-                    .visitor
-                    .sub_borrow(operand_0, operand_1, operand_borrow);
+                let result = self.visitor.sub(operand_0, operand_1);
+                let result_borrow = self.visitor.sub_borrow(operand_0, operand_1);
                 let result_carry = self.visitor.not(result_borrow);
 
                 self.visitor.set_cpu_c(result_carry);
@@ -202,12 +201,9 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
             nes_assembly::Mnemonic::Cpx => {
                 let operand_0 = self.visitor.cpu_x();
                 let operand_1 = self.read_operand_u8();
-                let operand_borrow = self.visitor.immediate_u1(false);
 
-                let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
-                let result_borrow = self
-                    .visitor
-                    .sub_borrow(operand_0, operand_1, operand_borrow);
+                let result = self.visitor.sub(operand_0, operand_1);
+                let result_borrow = self.visitor.sub_borrow(operand_0, operand_1);
                 let result_carry = self.visitor.not(result_borrow);
 
                 self.visitor.set_cpu_c(result_carry);
@@ -216,12 +212,9 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
             nes_assembly::Mnemonic::Cpy => {
                 let operand_0 = self.visitor.cpu_y();
                 let operand_1 = self.read_operand_u8();
-                let operand_borrow = self.visitor.immediate_u1(false);
 
-                let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
-                let result_borrow = self
-                    .visitor
-                    .sub_borrow(operand_0, operand_1, operand_borrow);
+                let result = self.visitor.sub(operand_0, operand_1);
+                let result_borrow = self.visitor.sub_borrow(operand_0, operand_1);
                 let result_carry = self.visitor.not(result_borrow);
 
                 self.visitor.set_cpu_c(result_carry);
@@ -230,9 +223,8 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
             nes_assembly::Mnemonic::Dec => {
                 let operand_0 = self.read_operand_u8();
                 let operand_1 = self.visitor.immediate_u8(1);
-                let operand_borrow = self.visitor.immediate_u1(false);
 
-                let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
+                let result = self.visitor.sub(operand_0, operand_1);
 
                 self.write_operand_u8(result);
                 self.set_nz(result);
@@ -240,9 +232,8 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
             nes_assembly::Mnemonic::Dex => {
                 let operand_0 = self.visitor.cpu_x();
                 let operand_1 = self.visitor.immediate_u8(1);
-                let operand_borrow = self.visitor.immediate_u1(false);
 
-                let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
+                let result = self.visitor.sub(operand_0, operand_1);
 
                 self.visitor.set_cpu_x(result);
                 self.set_nz(result);
@@ -250,9 +241,8 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
             nes_assembly::Mnemonic::Dey => {
                 let operand_0 = self.visitor.cpu_y();
                 let operand_1 = self.visitor.immediate_u8(1);
-                let operand_borrow = self.visitor.immediate_u1(false);
 
-                let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
+                let result = self.visitor.sub(operand_0, operand_1);
 
                 self.visitor.set_cpu_y(result);
                 self.set_nz(result);
@@ -269,9 +259,8 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
             nes_assembly::Mnemonic::Inc => {
                 let operand_0 = self.read_operand_u8();
                 let operand_1 = self.visitor.immediate_u8(1);
-                let operand_carry = self.visitor.immediate_u1(false);
 
-                let result = self.visitor.add_u8(operand_0, operand_1, operand_carry);
+                let result = self.visitor.add_u8(operand_0, operand_1);
 
                 self.write_operand_u8(result);
                 self.set_nz(result);
@@ -279,9 +268,8 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
             nes_assembly::Mnemonic::Inx => {
                 let operand_0 = self.visitor.cpu_x();
                 let operand_1 = self.visitor.immediate_u8(1);
-                let operand_carry = self.visitor.immediate_u1(false);
 
-                let result = self.visitor.add_u8(operand_0, operand_1, operand_carry);
+                let result = self.visitor.add_u8(operand_0, operand_1);
 
                 self.visitor.set_cpu_x(result);
                 self.set_nz(result);
@@ -289,9 +277,8 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
             nes_assembly::Mnemonic::Iny => {
                 let operand_0 = self.visitor.cpu_y();
                 let operand_1 = self.visitor.immediate_u8(1);
-                let operand_carry = self.visitor.immediate_u1(false);
 
-                let result = self.visitor.add_u8(operand_0, operand_1, operand_carry);
+                let result = self.visitor.add_u8(operand_0, operand_1);
 
                 self.visitor.set_cpu_y(result);
                 self.set_nz(result);
@@ -425,14 +412,16 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
                 let operand_carry = self.visitor.cpu_c();
                 let operand_borrow = self.visitor.not(operand_carry);
 
-                let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
-                let result_borrow = self
+                let result = self
                     .visitor
-                    .sub_borrow(operand_0, operand_1, operand_borrow);
+                    .sub_with_borrow(operand_0, operand_1, operand_borrow);
+                let result_borrow =
+                    self.visitor
+                        .sub_with_borrow_borrow(operand_0, operand_1, operand_borrow);
                 let result_carry = self.visitor.not(result_borrow);
                 let result_overflow =
                     self.visitor
-                        .sub_overflow(operand_0, operand_1, operand_borrow);
+                        .sub_with_borrow_overflow(operand_0, operand_1, operand_borrow);
 
                 self.visitor.set_cpu_a(result);
                 self.visitor.set_cpu_c(result_carry);
@@ -507,7 +496,6 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
     }
 
     fn read_u16_deref(&mut self, address: Visitor::U16) -> Visitor::U16 {
-        let r#false = self.visitor.immediate_u1(false);
         let n1 = self.visitor.immediate_u8(1);
 
         let low_address = address;
@@ -516,7 +504,7 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
         // behavior of the original hardware
         let high_address_high = self.visitor.high_byte(low_address);
         let high_address_low = self.visitor.low_byte(low_address);
-        let high_address_low = self.visitor.add_u8(high_address_low, n1, r#false);
+        let high_address_low = self.visitor.add_u8(high_address_low, n1);
         let high_address = self
             .visitor
             .concatenate(high_address_high, high_address_low);
@@ -535,11 +523,10 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
     }
 
     fn push_u8(&mut self, value: Visitor::U8) {
-        let r#false = self.visitor.immediate_u1(false);
         let n1 = self.visitor.immediate_u8(1);
 
         let s = self.visitor.cpu_s();
-        let s_minus_1 = self.visitor.sub(s, n1, r#false);
+        let s_minus_1 = self.visitor.sub(s, n1);
         let address = self.visitor.concatenate(n1, s);
 
         cpu_memory::write(&mut self.visitor, address, value);
@@ -555,11 +542,10 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
     }
 
     fn pop_u8(&mut self) -> Visitor::U8 {
-        let r#false = self.visitor.immediate_u1(false);
         let n1 = self.visitor.immediate_u8(1);
 
         let s = self.visitor.cpu_s();
-        let s_plus_1 = self.visitor.add_u8(s, n1, r#false);
+        let s_plus_1 = self.visitor.add_u8(s, n1);
         let result_address = self.visitor.concatenate(n1, s_plus_1);
         let result = cpu_memory::read(&mut self.visitor, result_address);
 
@@ -616,12 +602,11 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
                 self.visitor.add_u16(operand_0, operand_1)
             }
             nes_assembly::AddressingMode::XIndirect => {
-                let r#false = self.visitor.immediate_u1(false);
                 let n0 = self.visitor.immediate_u8(0);
 
                 let x = self.visitor.cpu_x();
                 let operand = self.visitor.immediate_u8(self.cpu_instruction.operand_u8());
-                let address = self.visitor.add_u8(operand, x, r#false);
+                let address = self.visitor.add_u8(operand, x);
                 let address = self.visitor.concatenate(n0, address);
                 self.read_u16_deref(address)
             }
@@ -629,16 +614,14 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
                 let n0 = self.visitor.immediate_u8(0);
                 let operand = self.visitor.immediate_u8(self.cpu_instruction.operand_u8());
                 let x = self.visitor.cpu_x();
-                let r#false = self.visitor.immediate_u1(false);
-                let address = self.visitor.add_u8(operand, x, r#false);
+                let address = self.visitor.add_u8(operand, x);
                 self.visitor.concatenate(n0, address)
             }
             nes_assembly::AddressingMode::ZeropageY => {
                 let n0 = self.visitor.immediate_u8(0);
                 let operand = self.visitor.immediate_u8(self.cpu_instruction.operand_u8());
                 let y = self.visitor.cpu_y();
-                let r#false = self.visitor.immediate_u1(false);
-                let address = self.visitor.add_u8(operand, y, r#false);
+                let address = self.visitor.add_u8(operand, y);
                 self.visitor.concatenate(n0, address)
             }
         }

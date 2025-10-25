@@ -399,7 +399,7 @@ impl Visitor for CompilerVisitor {
         self.define_8(Definition8::Xor(operand_0, operand_1))
     }
 
-    fn add_u8(
+    fn add_with_carry_u8(
         &mut self,
         operand_0: Variable8,
         operand_1: Variable8,
@@ -412,7 +412,7 @@ impl Visitor for CompilerVisitor {
         })
     }
 
-    fn add_u8_carry(
+    fn add_with_carry_u8_carry(
         &mut self,
         operand_0: Variable8,
         operand_1: Variable8,
@@ -425,7 +425,7 @@ impl Visitor for CompilerVisitor {
         })
     }
 
-    fn add_u8_overflow(
+    fn add_with_carry_u8_overflow(
         &mut self,
         operand_0: Variable8,
         operand_1: Variable8,
@@ -438,7 +438,7 @@ impl Visitor for CompilerVisitor {
         })
     }
 
-    fn sub(
+    fn sub_with_borrow(
         &mut self,
         operand_0: Variable8,
         operand_1: Variable8,
@@ -451,7 +451,7 @@ impl Visitor for CompilerVisitor {
         })
     }
 
-    fn sub_borrow(
+    fn sub_with_borrow_borrow(
         &mut self,
         operand_0: Variable8,
         operand_1: Variable8,
@@ -464,7 +464,7 @@ impl Visitor for CompilerVisitor {
         })
     }
 
-    fn sub_overflow(
+    fn sub_with_borrow_overflow(
         &mut self,
         operand_0: Variable8,
         operand_1: Variable8,
