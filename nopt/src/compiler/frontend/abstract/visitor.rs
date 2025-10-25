@@ -170,5 +170,5 @@ pub(crate) trait Visitor {
         populate_false_block: impl Fn(&mut Self) -> Self::U8,
     ) -> Self::U8;
 
-    fn jump(&self, address: Self::U16);
+    fn jump(self, address: Self::U16);
 }

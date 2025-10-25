@@ -572,7 +572,7 @@ impl Visitor for CompilerVisitor {
         result
     }
 
-    fn jump(&self, address: Variable16) {
+    fn jump(self, address: Variable16) {
         self.current_block.borrow_mut().jump = Jump::CpuAddress(address);
     }
 }
