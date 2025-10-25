@@ -3,7 +3,7 @@ mod cpu_memory;
 use crate::{
     compiler::{
         frontend::CompilerVisitor,
-        ir::{CpuFlag, Jump, Variable8, Variable16},
+        ir::{CpuFlag, Variable8, Variable16},
     },
     nes_assembly,
 };
@@ -17,7 +17,7 @@ pub(crate) struct Compiler {
 impl Compiler {
     #[expect(clippy::too_many_lines)]
     pub(crate) fn transpile(mut self) {
-        let mut jump = None;
+        let mut jump_target = None;
 
         match self.cpu_instruction.operation().mnemonic() {
             nes_assembly::Mnemonic::Adc => {
@@ -65,11 +65,10 @@ impl Compiler {
                 let address_if_false = self
                     .visitor
                     .immediate_u16(self.cpu_instruction.address_end());
-                let jump_target = self
-                    .visitor
-                    .select(not_c, address_if_true, address_if_false);
-
-                jump = Some(Jump::CpuAddress(jump_target));
+                jump_target = Some(
+                    self.visitor
+                        .select(not_c, address_if_true, address_if_false),
+                );
             }
             nes_assembly::Mnemonic::Bcs => {
                 let c = self.visitor.cpu_c();
@@ -77,10 +76,7 @@ impl Compiler {
                 let address_if_false = self
                     .visitor
                     .immediate_u16(self.cpu_instruction.address_end());
-
-                let jump_target = self.visitor.select(c, address_if_true, address_if_false);
-
-                jump = Some(Jump::CpuAddress(jump_target));
+                jump_target = Some(self.visitor.select(c, address_if_true, address_if_false));
             }
             nes_assembly::Mnemonic::Beq => {
                 let z = self.visitor.cpu_z();
@@ -88,9 +84,7 @@ impl Compiler {
                 let address_if_false = self
                     .visitor
                     .immediate_u16(self.cpu_instruction.address_end());
-                let jump_target = self.visitor.select(z, address_if_true, address_if_false);
-
-                jump = Some(Jump::CpuAddress(jump_target));
+                jump_target = Some(self.visitor.select(z, address_if_true, address_if_false));
             }
             nes_assembly::Mnemonic::Bit => {
                 let operand = self.read_operand_u8();
@@ -110,9 +104,7 @@ impl Compiler {
                 let address_if_false = self
                     .visitor
                     .immediate_u16(self.cpu_instruction.address_end());
-                let jump_target = self.visitor.select(n, address_if_true, address_if_false);
-
-                jump = Some(Jump::CpuAddress(jump_target));
+                jump_target = Some(self.visitor.select(n, address_if_true, address_if_false));
             }
             nes_assembly::Mnemonic::Bne => {
                 let z = self.visitor.cpu_z();
@@ -121,11 +113,10 @@ impl Compiler {
                 let address_if_false = self
                     .visitor
                     .immediate_u16(self.cpu_instruction.address_end());
-                let jump_target = self
-                    .visitor
-                    .select(not_z, address_if_true, address_if_false);
-
-                jump = Some(Jump::CpuAddress(jump_target));
+                jump_target = Some(
+                    self.visitor
+                        .select(not_z, address_if_true, address_if_false),
+                );
             }
             nes_assembly::Mnemonic::Bpl => {
                 let n = self.visitor.cpu_n();
@@ -134,11 +125,10 @@ impl Compiler {
                 let address_if_false = self
                     .visitor
                     .immediate_u16(self.cpu_instruction.address_end());
-                let jump_target = self
-                    .visitor
-                    .select(not_n, address_if_true, address_if_false);
-
-                jump = Some(Jump::CpuAddress(jump_target));
+                jump_target = Some(
+                    self.visitor
+                        .select(not_n, address_if_true, address_if_false),
+                );
             }
             nes_assembly::Mnemonic::Brk => {
                 let r#true = self.visitor.immediate_u1(true);
@@ -157,7 +147,7 @@ impl Compiler {
                 self.visitor.set_cpu_i(r#true);
                 self.push_u16(pc_plus_two);
                 self.push_u8(p);
-                jump = Some(Jump::CpuAddress(irq_handler));
+                jump_target = Some(irq_handler);
             }
             nes_assembly::Mnemonic::Bvc => {
                 let v = self.visitor.cpu_v();
@@ -166,11 +156,10 @@ impl Compiler {
                 let address_if_false = self
                     .visitor
                     .immediate_u16(self.cpu_instruction.address_end());
-                let jump_target = self
-                    .visitor
-                    .select(not_v, address_if_true, address_if_false);
-
-                jump = Some(Jump::CpuAddress(jump_target));
+                jump_target = Some(
+                    self.visitor
+                        .select(not_v, address_if_true, address_if_false),
+                );
             }
             nes_assembly::Mnemonic::Bvs => {
                 let v = self.visitor.cpu_v();
@@ -178,9 +167,7 @@ impl Compiler {
                 let address_if_false = self
                     .visitor
                     .immediate_u16(self.cpu_instruction.address_end());
-                let jump_target = self.visitor.select(v, address_if_true, address_if_false);
-
-                jump = Some(Jump::CpuAddress(jump_target));
+                jump_target = Some(self.visitor.select(v, address_if_true, address_if_false));
             }
             nes_assembly::Mnemonic::Clc => {
                 let r#false = self.visitor.immediate_u1(false);
@@ -316,7 +303,7 @@ impl Compiler {
             nes_assembly::Mnemonic::Jmp => {
                 let address = self.read_operand_u16();
 
-                jump = Some(Jump::CpuAddress(address));
+                jump_target = Some(address);
             }
             nes_assembly::Mnemonic::Jsr => {
                 let n2 = self.visitor.immediate_u16(2);
@@ -326,7 +313,7 @@ impl Compiler {
                 let address = self.read_operand_u16();
 
                 self.push_u16(pc_plus_2);
-                jump = Some(Jump::CpuAddress(address));
+                jump_target = Some(address);
             }
             nes_assembly::Mnemonic::Lda => {
                 let result = self.read_operand_u8();
@@ -426,7 +413,7 @@ impl Compiler {
 
                 self.visitor.set_cpu_p(p);
                 self.visitor.set_cpu_unused_flag(unused_flag);
-                jump = Some(Jump::CpuAddress(return_address));
+                jump_target = Some(return_address);
             }
             nes_assembly::Mnemonic::Rts => {
                 let n1 = self.visitor.immediate_u16(1);
@@ -434,7 +421,7 @@ impl Compiler {
                 let return_address_minus_1 = self.pop_u16();
                 let return_address = self.visitor.add_u16(return_address_minus_1, n1);
 
-                jump = Some(Jump::CpuAddress(return_address));
+                jump_target = Some(return_address);
             }
             nes_assembly::Mnemonic::Sbc => {
                 let operand_0 = self.visitor.cpu_a();
@@ -516,10 +503,10 @@ impl Compiler {
             }
         }
 
-        let jump = jump.unwrap_or(Jump::CpuAddress(
+        let jump = jump_target.unwrap_or(
             self.visitor
                 .immediate_u16(self.cpu_instruction.address_end()),
-        ));
+        );
         self.visitor.jump(jump);
     }
 

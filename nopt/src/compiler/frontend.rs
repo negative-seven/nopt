@@ -566,7 +566,7 @@ impl CompilerVisitor {
         result
     }
 
-    pub(crate) fn jump(&self, jump: Jump) {
-        self.current_block.borrow_mut().jump = jump;
+    pub(crate) fn jump(&self, address: Variable16) {
+        self.current_block.borrow_mut().jump = Jump::CpuAddress(address);
     }
 }
