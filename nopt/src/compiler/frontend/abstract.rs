@@ -4,8 +4,7 @@ use crate::{
     compiler::{
         frontend::CompilerVisitor,
         ir::{
-            CpuFlag, CpuRegister, Definition1, Definition8, Definition16, Destination1,
-            Destination8, Jump, Variable1, Variable8, Variable16,
+            CpuFlag, Definition1, Definition8, Definition16, Jump, Variable1, Variable8, Variable16,
         },
     },
     nes_assembly,
@@ -36,9 +35,9 @@ impl Compiler {
                     self.visitor
                         .add_u8_overflow(operand_0, operand_1, operand_carry);
 
-                self.store_8(self.visitor.cpu_a(), result);
-                self.store_1(self.visitor.cpu_c(), result_carry);
-                self.store_1(self.visitor.cpu_v(), result_overflow);
+                self.visitor.set_cpu_a(result);
+                self.visitor.set_cpu_c(result_carry);
+                self.visitor.set_cpu_v(result_overflow);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::And => {
@@ -47,7 +46,7 @@ impl Compiler {
 
                 let result = self.visitor.and(operand_0, operand_1);
 
-                self.store_8(self.visitor.cpu_a(), result);
+                self.visitor.set_cpu_a(result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Asl => {
@@ -58,7 +57,7 @@ impl Compiler {
                 let result_carry = self.visitor.get_bit(operand, 7);
 
                 self.write_operand_u8(result);
-                self.store_1(self.visitor.cpu_c(), result_carry);
+                self.visitor.set_cpu_c(result_carry);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Bcc => {
@@ -97,9 +96,9 @@ impl Compiler {
                 let result = self.define_8(a & operand);
                 let z = self.visitor.is_zero(result);
 
-                self.store_1(self.visitor.cpu_n(), n);
-                self.store_1(self.visitor.cpu_v(), v);
-                self.store_1(self.visitor.cpu_z(), z);
+                self.visitor.set_cpu_n(n);
+                self.visitor.set_cpu_v(v);
+                self.visitor.set_cpu_z(z);
             }
             nes_assembly::Mnemonic::Bmi => {
                 let n = self.define_1(self.visitor.cpu_n());
@@ -140,12 +139,12 @@ impl Compiler {
                 let irq_handler_address = self.define_16(0xfffe);
                 let irq_handler = self.read_u16_deref(irq_handler_address);
 
-                self.store_1(self.visitor.cpu_unused_flag(), r#true);
-                self.store_1(self.visitor.cpu_b(), r#true);
+                self.visitor.set_cpu_unused_flag(r#true);
+                self.visitor.set_cpu_b(r#true);
 
                 let p = self.define_8(self.visitor.cpu_p());
 
-                self.store_1(self.visitor.cpu_i(), r#true);
+                self.visitor.set_cpu_i(r#true);
                 self.push_u16(pc_plus_two);
                 self.push_u8(p);
                 jump = Some(Jump::CpuAddress(irq_handler));
@@ -172,22 +171,22 @@ impl Compiler {
             nes_assembly::Mnemonic::Clc => {
                 let r#false = self.define_1(false);
 
-                self.store_1(self.visitor.cpu_c(), r#false);
+                self.visitor.set_cpu_c(r#false);
             }
             nes_assembly::Mnemonic::Cld => {
                 let r#false = self.define_1(false);
 
-                self.store_1(self.visitor.cpu_d(), r#false);
+                self.visitor.set_cpu_d(r#false);
             }
             nes_assembly::Mnemonic::Cli => {
                 let r#false = self.define_1(false);
 
-                self.store_1(self.visitor.cpu_i(), r#false);
+                self.visitor.set_cpu_i(r#false);
             }
             nes_assembly::Mnemonic::Clv => {
                 let r#false = self.define_1(false);
 
-                self.store_1(self.visitor.cpu_v(), r#false);
+                self.visitor.set_cpu_v(r#false);
             }
             nes_assembly::Mnemonic::Cmp => {
                 let operand_0 = self.define_8(self.visitor.cpu_a());
@@ -200,7 +199,7 @@ impl Compiler {
                     .sub_borrow(operand_0, operand_1, operand_borrow);
                 let result_carry = self.visitor.not(result_borrow);
 
-                self.store_1(self.visitor.cpu_c(), result_carry);
+                self.visitor.set_cpu_c(result_carry);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Cpx => {
@@ -214,7 +213,7 @@ impl Compiler {
                     .sub_borrow(operand_0, operand_1, operand_borrow);
                 let result_carry = self.define_1(!result_borrow);
 
-                self.store_1(self.visitor.cpu_c(), result_carry);
+                self.visitor.set_cpu_c(result_carry);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Cpy => {
@@ -228,7 +227,7 @@ impl Compiler {
                     .sub_borrow(operand_0, operand_1, operand_borrow);
                 let result_carry = self.define_1(!result_borrow);
 
-                self.store_1(self.visitor.cpu_c(), result_carry);
+                self.visitor.set_cpu_c(result_carry);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Dec => {
@@ -248,7 +247,7 @@ impl Compiler {
 
                 let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
 
-                self.store_8(self.visitor.cpu_x(), result);
+                self.visitor.set_cpu_x(result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Dey => {
@@ -258,7 +257,7 @@ impl Compiler {
 
                 let result = self.visitor.sub(operand_0, operand_1, operand_borrow);
 
-                self.store_8(self.visitor.cpu_y(), result);
+                self.visitor.set_cpu_y(result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Eor => {
@@ -267,7 +266,7 @@ impl Compiler {
 
                 let result = self.define_8(operand_0 ^ operand_1);
 
-                self.store_8(self.visitor.cpu_a(), result);
+                self.visitor.set_cpu_a(result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Inc => {
@@ -287,7 +286,7 @@ impl Compiler {
 
                 let result = self.visitor.add_u8(operand_0, operand_1, operand_carry);
 
-                self.store_8(self.visitor.cpu_x(), result);
+                self.visitor.set_cpu_x(result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Iny => {
@@ -297,7 +296,7 @@ impl Compiler {
 
                 let result = self.visitor.add_u8(operand_0, operand_1, operand_carry);
 
-                self.store_8(self.visitor.cpu_y(), result);
+                self.visitor.set_cpu_y(result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Jmp => {
@@ -318,19 +317,19 @@ impl Compiler {
             nes_assembly::Mnemonic::Lda => {
                 let result = self.read_operand_u8();
 
-                self.store_8(self.visitor.cpu_a(), result);
+                self.visitor.set_cpu_a(result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Ldx => {
                 let result = self.read_operand_u8();
 
-                self.store_8(self.visitor.cpu_x(), result);
+                self.visitor.set_cpu_x(result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Ldy => {
                 let result = self.read_operand_u8();
 
-                self.store_8(self.visitor.cpu_y(), result);
+                self.visitor.set_cpu_y(result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Lsr => {
@@ -341,7 +340,7 @@ impl Compiler {
                 let result_carry = self.visitor.get_bit(operand, 0);
 
                 self.write_operand_u8(result);
-                self.store_1(self.visitor.cpu_c(), result_carry);
+                self.visitor.set_cpu_c(result_carry);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Nop => {}
@@ -351,7 +350,7 @@ impl Compiler {
 
                 let result = self.define_8(operand_0 | operand_1);
 
-                self.store_8(self.visitor.cpu_a(), result);
+                self.visitor.set_cpu_a(result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Pha => {
@@ -371,7 +370,7 @@ impl Compiler {
             nes_assembly::Mnemonic::Pla => {
                 let value = self.pop_u8();
 
-                self.store_8(self.visitor.cpu_a(), value);
+                self.visitor.set_cpu_a(value);
                 self.set_nz(value);
             }
             nes_assembly::Mnemonic::Plp => {
@@ -379,9 +378,9 @@ impl Compiler {
                 let unused_flag = self.define_1(self.visitor.cpu_unused_flag());
                 let value = self.pop_u8();
 
-                self.store_8(self.visitor.cpu_p(), value);
-                self.store_1(self.visitor.cpu_b(), b);
-                self.store_1(self.visitor.cpu_unused_flag(), unused_flag);
+                self.visitor.set_cpu_p(value);
+                self.visitor.set_cpu_b(b);
+                self.visitor.set_cpu_unused_flag(unused_flag);
             }
             nes_assembly::Mnemonic::Rol => {
                 let operand = self.read_operand_u8();
@@ -391,7 +390,7 @@ impl Compiler {
                 let result_carry = self.visitor.get_bit(operand, 7);
 
                 self.write_operand_u8(result);
-                self.store_1(self.visitor.cpu_c(), result_carry);
+                self.visitor.set_cpu_c(result_carry);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Ror => {
@@ -402,7 +401,7 @@ impl Compiler {
                 let result_carry = self.visitor.get_bit(operand, 0);
 
                 self.write_operand_u8(result);
-                self.store_1(self.visitor.cpu_c(), result_carry);
+                self.visitor.set_cpu_c(result_carry);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Rti => {
@@ -410,8 +409,8 @@ impl Compiler {
                 let p = self.pop_u8();
                 let return_address = self.pop_u16();
 
-                self.store_8(self.visitor.cpu_p(), p);
-                self.store_1(self.visitor.cpu_unused_flag(), unused_flag);
+                self.visitor.set_cpu_p(p);
+                self.visitor.set_cpu_unused_flag(unused_flag);
                 jump = Some(Jump::CpuAddress(return_address));
             }
             nes_assembly::Mnemonic::Rts => {
@@ -437,22 +436,22 @@ impl Compiler {
                     self.visitor
                         .sub_overflow(operand_0, operand_1, operand_borrow);
 
-                self.store_8(self.visitor.cpu_a(), result);
-                self.store_1(self.visitor.cpu_c(), result_carry);
-                self.store_1(self.visitor.cpu_v(), result_overflow);
+                self.visitor.set_cpu_a(result);
+                self.visitor.set_cpu_c(result_carry);
+                self.visitor.set_cpu_v(result_overflow);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Sec => {
                 let r#true = self.define_1(true);
-                self.store_1(self.visitor.cpu_c(), r#true);
+                self.visitor.set_cpu_c(r#true);
             }
             nes_assembly::Mnemonic::Sed => {
                 let r#true = self.define_1(true);
-                self.store_1(self.visitor.cpu_d(), r#true);
+                self.visitor.set_cpu_d(r#true);
             }
             nes_assembly::Mnemonic::Sei => {
                 let r#true = self.define_1(true);
-                self.store_1(self.visitor.cpu_i(), r#true);
+                self.visitor.set_cpu_i(r#true);
             }
             nes_assembly::Mnemonic::Sta => {
                 let result = self.define_8(self.visitor.cpu_a());
@@ -468,31 +467,31 @@ impl Compiler {
             }
             nes_assembly::Mnemonic::Tax => {
                 let result = self.define_8(self.visitor.cpu_a());
-                self.store_8(self.visitor.cpu_x(), result);
+                self.visitor.set_cpu_x(result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Tay => {
                 let result = self.define_8(self.visitor.cpu_a());
-                self.store_8(self.visitor.cpu_y(), result);
+                self.visitor.set_cpu_y(result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Tsx => {
                 let result = self.define_8(self.visitor.cpu_s());
-                self.store_8(self.visitor.cpu_x(), result);
+                self.visitor.set_cpu_x(result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Txa => {
                 let result = self.define_8(self.visitor.cpu_x());
-                self.store_8(self.visitor.cpu_a(), result);
+                self.visitor.set_cpu_a(result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Txs => {
                 let result = self.define_8(self.visitor.cpu_x());
-                self.store_8(self.visitor.cpu_s(), result);
+                self.visitor.set_cpu_s(result);
             }
             nes_assembly::Mnemonic::Tya => {
                 let result = self.define_8(self.visitor.cpu_y());
-                self.store_8(self.visitor.cpu_a(), result);
+                self.visitor.set_cpu_a(result);
                 self.set_nz(result);
             }
             nes_assembly::Mnemonic::Unimplemented => {
@@ -538,38 +537,12 @@ impl Compiler {
         self.define_16(high % low)
     }
 
-    fn store_1(&mut self, destination: impl Into<Destination1>, variable: Variable1) {
-        match destination.into() {
-            Destination1::CpuFlag(CpuFlag::C) => self.visitor.set_cpu_c(variable),
-            Destination1::CpuFlag(CpuFlag::Z) => self.visitor.set_cpu_z(variable),
-            Destination1::CpuFlag(CpuFlag::I) => self.visitor.set_cpu_i(variable),
-            Destination1::CpuFlag(CpuFlag::D) => self.visitor.set_cpu_d(variable),
-            Destination1::CpuFlag(CpuFlag::B) => self.visitor.set_cpu_b(variable),
-            Destination1::CpuFlag(CpuFlag::Unused) => self.visitor.set_cpu_unused_flag(variable),
-            Destination1::CpuFlag(CpuFlag::V) => self.visitor.set_cpu_v(variable),
-            Destination1::CpuFlag(CpuFlag::N) => self.visitor.set_cpu_n(variable),
-        }
-    }
-
-    fn store_8(&mut self, destination: impl Into<Destination8>, variable: Variable8) {
-        match destination.into() {
-            Destination8::CpuRam(address) => self.visitor.set_cpu_ram(address, variable),
-            Destination8::PpuRam(address) => self.visitor.set_ppu_ram(address, variable),
-            Destination8::PrgRam(address) => self.visitor.set_prg_ram(address, variable),
-            Destination8::CpuRegister(CpuRegister::A) => self.visitor.set_cpu_a(variable),
-            Destination8::CpuRegister(CpuRegister::X) => self.visitor.set_cpu_x(variable),
-            Destination8::CpuRegister(CpuRegister::Y) => self.visitor.set_cpu_y(variable),
-            Destination8::CpuRegister(CpuRegister::S) => self.visitor.set_cpu_s(variable),
-            Destination8::CpuRegister(CpuRegister::P) => self.visitor.set_cpu_p(variable),
-        }
-    }
-
     fn set_nz(&mut self, value: Variable8) {
         let n = self.visitor.is_negative(value);
         let z = self.visitor.is_zero(value);
 
-        self.store_1(self.visitor.cpu_n(), n);
-        self.store_1(self.visitor.cpu_z(), z);
+        self.visitor.set_cpu_n(n);
+        self.visitor.set_cpu_z(z);
     }
 
     fn push_u8(&mut self, value: Variable8) {
@@ -581,7 +554,7 @@ impl Compiler {
         let address = self.define_16(n1 % s);
 
         cpu_memory::write(&mut self.visitor, address, value);
-        self.store_8(self.visitor.cpu_s(), s_minus_1);
+        self.visitor.set_cpu_s(s_minus_1);
     }
 
     fn push_u16(&mut self, value: Variable16) {
@@ -601,7 +574,7 @@ impl Compiler {
         let result_address = self.define_16(n1 % s_plus_1);
         let result = cpu_memory::read(&mut self.visitor, result_address);
 
-        self.store_8(self.visitor.cpu_s(), s_plus_1);
+        self.visitor.set_cpu_s(s_plus_1);
         result
     }
 
@@ -704,7 +677,7 @@ impl Compiler {
         }
     }
 
-    fn write_operand_u8(&mut self, source: Variable8) {
+    fn write_operand_u8(&mut self, variable: Variable8) {
         match self.cpu_instruction.operation().addressing_mode() {
             nes_assembly::AddressingMode::Absolute
             | nes_assembly::AddressingMode::Zeropage
@@ -715,11 +688,10 @@ impl Compiler {
             | nes_assembly::AddressingMode::ZeropageX
             | nes_assembly::AddressingMode::ZeropageY => {
                 let address = self.get_operand_address();
-                cpu_memory::write(&mut self.visitor, address, source);
+                cpu_memory::write(&mut self.visitor, address, variable);
             }
             nes_assembly::AddressingMode::Accumulator => {
-                let a = self.visitor.cpu_a();
-                self.store_8(a, source);
+                self.visitor.set_cpu_a(variable);
             }
             nes_assembly::AddressingMode::Immediate
             | nes_assembly::AddressingMode::Implied
