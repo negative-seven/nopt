@@ -52,8 +52,10 @@ impl CompilerVisitor {
             .define_16(Definition16::Immediate(value))
     }
 
-    pub(crate) fn cpu_c(&self) -> Destination1 {
-        Destination1::CpuFlag(CpuFlag::C)
+    pub(crate) fn cpu_c(&self) -> Variable1 {
+        self.current_block
+            .borrow_mut()
+            .define_1(Definition1::CpuFlag(CpuFlag::C))
     }
 
     fn set_cpu_c(&self, variable: Variable1) {
@@ -66,8 +68,10 @@ impl CompilerVisitor {
             });
     }
 
-    pub(crate) fn cpu_z(&self) -> Destination1 {
-        Destination1::CpuFlag(CpuFlag::Z)
+    pub(crate) fn cpu_z(&self) -> Variable1 {
+        self.current_block
+            .borrow_mut()
+            .define_1(Definition1::CpuFlag(CpuFlag::Z))
     }
 
     fn set_cpu_z(&self, variable: Variable1) {
@@ -80,10 +84,6 @@ impl CompilerVisitor {
             });
     }
 
-    pub(crate) fn cpu_i(&self) -> Destination1 {
-        Destination1::CpuFlag(CpuFlag::I)
-    }
-
     fn set_cpu_i(&self, variable: Variable1) {
         self.current_block
             .borrow_mut()
@@ -92,10 +92,6 @@ impl CompilerVisitor {
                 destination: Destination1::CpuFlag(CpuFlag::I),
                 variable,
             });
-    }
-
-    pub(crate) fn cpu_d(&self) -> Destination1 {
-        Destination1::CpuFlag(CpuFlag::D)
     }
 
     fn set_cpu_d(&self, variable: Variable1) {
@@ -108,8 +104,10 @@ impl CompilerVisitor {
             });
     }
 
-    pub(crate) fn cpu_b(&self) -> Destination1 {
-        Destination1::CpuFlag(CpuFlag::B)
+    pub(crate) fn cpu_b(&self) -> Variable1 {
+        self.current_block
+            .borrow_mut()
+            .define_1(Definition1::CpuFlag(CpuFlag::B))
     }
 
     fn set_cpu_b(&self, variable: Variable1) {
@@ -122,8 +120,10 @@ impl CompilerVisitor {
             });
     }
 
-    pub(crate) fn cpu_unused_flag(&self) -> Destination1 {
-        Destination1::CpuFlag(CpuFlag::Unused)
+    pub(crate) fn cpu_unused_flag(&self) -> Variable1 {
+        self.current_block
+            .borrow_mut()
+            .define_1(Definition1::CpuFlag(CpuFlag::Unused))
     }
 
     fn set_cpu_unused_flag(&self, variable: Variable1) {
@@ -136,8 +136,10 @@ impl CompilerVisitor {
             });
     }
 
-    pub(crate) fn cpu_v(&self) -> Destination1 {
-        Destination1::CpuFlag(CpuFlag::V)
+    pub(crate) fn cpu_v(&self) -> Variable1 {
+        self.current_block
+            .borrow_mut()
+            .define_1(Definition1::CpuFlag(CpuFlag::V))
     }
 
     fn set_cpu_v(&self, variable: Variable1) {
@@ -150,8 +152,10 @@ impl CompilerVisitor {
             });
     }
 
-    pub(crate) fn cpu_n(&self) -> Destination1 {
-        Destination1::CpuFlag(CpuFlag::N)
+    pub(crate) fn cpu_n(&self) -> Variable1 {
+        self.current_block
+            .borrow_mut()
+            .define_1(Definition1::CpuFlag(CpuFlag::N))
     }
 
     fn set_cpu_n(&self, variable: Variable1) {
@@ -164,8 +168,10 @@ impl CompilerVisitor {
             });
     }
 
-    pub(crate) fn cpu_a(&self) -> Destination8 {
-        Destination8::CpuRegister(CpuRegister::A)
+    pub(crate) fn cpu_a(&self) -> Variable8 {
+        self.current_block
+            .borrow_mut()
+            .define_8(Definition8::CpuRegister(CpuRegister::A))
     }
 
     fn set_cpu_a(&self, variable: Variable8) {
@@ -178,8 +184,10 @@ impl CompilerVisitor {
             });
     }
 
-    pub(crate) fn cpu_x(&self) -> Destination8 {
-        Destination8::CpuRegister(CpuRegister::X)
+    pub(crate) fn cpu_x(&self) -> Variable8 {
+        self.current_block
+            .borrow_mut()
+            .define_8(Definition8::CpuRegister(CpuRegister::X))
     }
 
     fn set_cpu_x(&self, variable: Variable8) {
@@ -192,8 +200,10 @@ impl CompilerVisitor {
             });
     }
 
-    pub(crate) fn cpu_y(&self) -> Destination8 {
-        Destination8::CpuRegister(CpuRegister::Y)
+    pub(crate) fn cpu_y(&self) -> Variable8 {
+        self.current_block
+            .borrow_mut()
+            .define_8(Definition8::CpuRegister(CpuRegister::Y))
     }
 
     fn set_cpu_y(&self, variable: Variable8) {
@@ -206,8 +216,10 @@ impl CompilerVisitor {
             });
     }
 
-    pub(crate) fn cpu_s(&self) -> Destination8 {
-        Destination8::CpuRegister(CpuRegister::S)
+    pub(crate) fn cpu_s(&self) -> Variable8 {
+        self.current_block
+            .borrow_mut()
+            .define_8(Definition8::CpuRegister(CpuRegister::S))
     }
 
     fn set_cpu_s(&self, variable: Variable8) {
@@ -220,8 +232,10 @@ impl CompilerVisitor {
             });
     }
 
-    pub(crate) fn cpu_p(&self) -> Destination8 {
-        Destination8::CpuRegister(CpuRegister::P)
+    pub(crate) fn cpu_p(&self) -> Variable8 {
+        self.current_block
+            .borrow_mut()
+            .define_8(Definition8::CpuRegister(CpuRegister::P))
     }
 
     fn set_cpu_p(&self, variable: Variable8) {
