@@ -280,7 +280,7 @@ impl Compiler {
                 let operand_0 = self.visitor.cpu_a();
                 let operand_1 = self.read_operand_u8();
 
-                let result = self.define_8(operand_0 ^ operand_1);
+                let result = self.visitor.xor(operand_0, operand_1);
 
                 self.visitor.set_cpu_a(result);
                 self.set_nz(result);
@@ -364,7 +364,7 @@ impl Compiler {
                 let operand_0 = self.visitor.cpu_a();
                 let operand_1 = self.read_operand_u8();
 
-                let result = self.define_8(operand_0 | operand_1);
+                let result = self.visitor.or(operand_0, operand_1);
 
                 self.visitor.set_cpu_a(result);
                 self.set_nz(result);
@@ -380,7 +380,7 @@ impl Compiler {
                     .immediate_u8((1 << CpuFlag::Unused.index()) | (1 << CpuFlag::B.index()));
 
                 let value = self.visitor.cpu_p();
-                let value = self.define_8(value | set_flags_mask);
+                let value = self.visitor.or(value, set_flags_mask);
 
                 self.push_u8(value);
             }

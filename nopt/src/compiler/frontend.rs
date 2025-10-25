@@ -371,8 +371,16 @@ impl CompilerVisitor {
         self.define_16(Definition16::FromU8s { high, low })
     }
 
+    pub(crate) fn or(&mut self, operand_0: Variable8, operand_1: Variable8) -> Variable8 {
+        self.define_8(Definition8::Or(operand_0, operand_1))
+    }
+
     pub(crate) fn and(&mut self, operand_0: Variable8, operand_1: Variable8) -> Variable8 {
         self.define_8(Definition8::And(operand_0, operand_1))
+    }
+
+    pub(crate) fn xor(&mut self, operand_0: Variable8, operand_1: Variable8) -> Variable8 {
+        self.define_8(Definition8::Xor(operand_0, operand_1))
     }
 
     pub(crate) fn add_u8(
