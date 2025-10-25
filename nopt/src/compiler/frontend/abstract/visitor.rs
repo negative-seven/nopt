@@ -11,73 +11,73 @@ pub(crate) trait Visitor {
 
     fn cpu_c(&self) -> Self::U1;
 
-    fn set_cpu_c(&self, variable: Self::U1);
+    fn set_cpu_c(&self, value: Self::U1);
 
     fn cpu_z(&self) -> Self::U1;
 
-    fn set_cpu_z(&self, variable: Self::U1);
+    fn set_cpu_z(&self, value: Self::U1);
 
-    fn set_cpu_i(&self, variable: Self::U1);
+    fn set_cpu_i(&self, value: Self::U1);
 
-    fn set_cpu_d(&self, variable: Self::U1);
+    fn set_cpu_d(&self, value: Self::U1);
 
     fn cpu_b(&self) -> Self::U1;
 
-    fn set_cpu_b(&self, variable: Self::U1);
+    fn set_cpu_b(&self, value: Self::U1);
 
     fn cpu_unused_flag(&self) -> Self::U1;
 
-    fn set_cpu_unused_flag(&self, variable: Self::U1);
+    fn set_cpu_unused_flag(&self, value: Self::U1);
 
     fn cpu_v(&self) -> Self::U1;
 
-    fn set_cpu_v(&self, variable: Self::U1);
+    fn set_cpu_v(&self, value: Self::U1);
 
     fn cpu_n(&self) -> Self::U1;
 
-    fn set_cpu_n(&self, variable: Self::U1);
+    fn set_cpu_n(&self, value: Self::U1);
 
     fn cpu_a(&self) -> Self::U8;
 
-    fn set_cpu_a(&self, variable: Self::U8);
+    fn set_cpu_a(&self, value: Self::U8);
 
     fn cpu_x(&self) -> Self::U8;
 
-    fn set_cpu_x(&self, variable: Self::U8);
+    fn set_cpu_x(&self, value: Self::U8);
 
     fn cpu_y(&self) -> Self::U8;
 
-    fn set_cpu_y(&self, variable: Self::U8);
+    fn set_cpu_y(&self, value: Self::U8);
 
     fn cpu_s(&self) -> Self::U8;
 
-    fn set_cpu_s(&self, variable: Self::U8);
+    fn set_cpu_s(&self, value: Self::U8);
 
     fn cpu_p(&self) -> Self::U8;
 
-    fn set_cpu_p(&self, variable: Self::U8);
+    fn set_cpu_p(&self, value: Self::U8);
 
     fn cpu_pc(&mut self) -> Self::U16;
 
     fn ppu_current_address(&mut self) -> Self::U16;
 
-    fn set_ppu_current_address(&self, variable: Self::U16);
+    fn set_ppu_current_address(&self, value: Self::U16);
 
     fn cpu_ram(&mut self, address: Self::U16) -> Self::U8;
 
-    fn set_cpu_ram(&self, address: Self::U16, variable: Self::U8);
+    fn set_cpu_ram(&self, address: Self::U16, value: Self::U8);
 
     fn prg_ram(&mut self, address: Self::U16) -> Self::U8;
 
-    fn set_prg_ram(&self, address: Self::U16, variable: Self::U8);
+    fn set_prg_ram(&self, address: Self::U16, value: Self::U8);
 
     fn ppu_ram(&mut self, address: Self::U16) -> Self::U8;
 
-    fn set_ppu_ram(&self, address: Self::U16, variable: Self::U8);
+    fn set_ppu_ram(&self, address: Self::U16, value: Self::U8);
 
     fn rom(&mut self, address: Self::U16) -> Self::U8;
 
-    fn get_bit(&mut self, operand: Self::U8, index: u8) -> Self::U1;
+    fn get_bit(&mut self, value: Self::U8, bit_index: u8) -> Self::U1;
 
     fn not(&mut self, operand: Self::U1) -> Self::U1;
 
@@ -98,11 +98,11 @@ pub(crate) trait Visitor {
     fn select(
         &mut self,
         condition: Self::U1,
-        result_if_true: Self::U16,
-        result_if_false: Self::U16,
+        value_if_true: Self::U16,
+        value_if_false: Self::U16,
     ) -> Self::U16;
 
-    fn concatenate(&mut self, high: Self::U8, low: Self::U8) -> Self::U16;
+    fn concatenate(&mut self, operand_0: Self::U8, operand_1: Self::U8) -> Self::U16;
 
     fn or(&mut self, operand_0: Self::U8, operand_1: Self::U8) -> Self::U8;
 
@@ -159,15 +159,15 @@ pub(crate) trait Visitor {
     fn if_else(
         &mut self,
         condition: Self::U1,
-        populate_true_block: impl Fn(&mut Self),
-        populate_false_block: impl Fn(&mut Self),
+        visit_true: impl Fn(&mut Self),
+        visit_false: impl Fn(&mut Self),
     );
 
     fn if_else_with_result(
         &mut self,
         condition: Self::U1,
-        populate_true_block: impl Fn(&mut Self) -> Self::U8,
-        populate_false_block: impl Fn(&mut Self) -> Self::U8,
+        visit_true: impl Fn(&mut Self) -> Self::U8,
+        visit_false: impl Fn(&mut Self) -> Self::U8,
     ) -> Self::U8;
 
     fn jump(self, address: Self::U16);

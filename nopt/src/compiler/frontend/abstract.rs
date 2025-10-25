@@ -12,7 +12,7 @@ pub(crate) struct Compiler<Visitor: super::Visitor> {
 
 impl<Visitor: super::Visitor> Compiler<Visitor> {
     #[expect(clippy::too_many_lines)]
-    pub(crate) fn transpile(mut self) {
+    pub(crate) fn compile(mut self) {
         let mut jump_target = None;
 
         match self.cpu_instruction.operation().mnemonic() {
@@ -506,11 +506,11 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
         self.visitor.jump(jump);
     }
 
-    fn read_u16_deref(&mut self, cpu_address: Visitor::U16) -> Visitor::U16 {
+    fn read_u16_deref(&mut self, address: Visitor::U16) -> Visitor::U16 {
         let r#false = self.visitor.immediate_u1(false);
         let n1 = self.visitor.immediate_u8(1);
 
-        let low_address = cpu_address;
+        let low_address = address;
 
         // intentionally apply page wrapping to the high byte address, matching the
         // behavior of the original hardware
@@ -669,7 +669,7 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
         }
     }
 
-    fn write_operand_u8(&mut self, variable: Visitor::U8) {
+    fn write_operand_u8(&mut self, value: Visitor::U8) {
         match self.cpu_instruction.operation().addressing_mode() {
             nes_assembly::AddressingMode::Absolute
             | nes_assembly::AddressingMode::Zeropage
@@ -680,10 +680,10 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
             | nes_assembly::AddressingMode::ZeropageX
             | nes_assembly::AddressingMode::ZeropageY => {
                 let address = self.get_operand_address();
-                cpu_memory::write(&mut self.visitor, address, variable);
+                cpu_memory::write(&mut self.visitor, address, value);
             }
             nes_assembly::AddressingMode::Accumulator => {
-                self.visitor.set_cpu_a(variable);
+                self.visitor.set_cpu_a(value);
             }
             nes_assembly::AddressingMode::Immediate
             | nes_assembly::AddressingMode::Implied

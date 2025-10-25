@@ -24,7 +24,7 @@ pub(super) fn compile_instruction(nes: &mut Nes, address: u16) -> (Function, boo
         },
         cpu_instruction: nes_instruction,
     }
-    .transpile();
+    .compile();
 
     (Function { basic_block }, is_prg_rom_only)
 }
@@ -76,13 +76,13 @@ impl Visitor for CompilerVisitor {
             .define_1(Definition1::CpuFlag(CpuFlag::C))
     }
 
-    fn set_cpu_c(&self, variable: Variable1) {
+    fn set_cpu_c(&self, value: Variable1) {
         self.current_block
             .borrow_mut()
             .instructions
             .push(Instruction::Store1 {
                 destination: Destination1::CpuFlag(CpuFlag::C),
-                variable,
+                variable: value,
             });
     }
 
@@ -92,33 +92,33 @@ impl Visitor for CompilerVisitor {
             .define_1(Definition1::CpuFlag(CpuFlag::Z))
     }
 
-    fn set_cpu_z(&self, variable: Variable1) {
+    fn set_cpu_z(&self, value: Variable1) {
         self.current_block
             .borrow_mut()
             .instructions
             .push(Instruction::Store1 {
                 destination: Destination1::CpuFlag(CpuFlag::Z),
-                variable,
+                variable: value,
             });
     }
 
-    fn set_cpu_i(&self, variable: Variable1) {
+    fn set_cpu_i(&self, value: Variable1) {
         self.current_block
             .borrow_mut()
             .instructions
             .push(Instruction::Store1 {
                 destination: Destination1::CpuFlag(CpuFlag::I),
-                variable,
+                variable: value,
             });
     }
 
-    fn set_cpu_d(&self, variable: Variable1) {
+    fn set_cpu_d(&self, value: Variable1) {
         self.current_block
             .borrow_mut()
             .instructions
             .push(Instruction::Store1 {
                 destination: Destination1::CpuFlag(CpuFlag::D),
-                variable,
+                variable: value,
             });
     }
 
@@ -128,13 +128,13 @@ impl Visitor for CompilerVisitor {
             .define_1(Definition1::CpuFlag(CpuFlag::B))
     }
 
-    fn set_cpu_b(&self, variable: Variable1) {
+    fn set_cpu_b(&self, value: Variable1) {
         self.current_block
             .borrow_mut()
             .instructions
             .push(Instruction::Store1 {
                 destination: Destination1::CpuFlag(CpuFlag::B),
-                variable,
+                variable: value,
             });
     }
 
@@ -144,13 +144,13 @@ impl Visitor for CompilerVisitor {
             .define_1(Definition1::CpuFlag(CpuFlag::Unused))
     }
 
-    fn set_cpu_unused_flag(&self, variable: Variable1) {
+    fn set_cpu_unused_flag(&self, value: Variable1) {
         self.current_block
             .borrow_mut()
             .instructions
             .push(Instruction::Store1 {
                 destination: Destination1::CpuFlag(CpuFlag::Unused),
-                variable,
+                variable: value,
             });
     }
 
@@ -160,13 +160,13 @@ impl Visitor for CompilerVisitor {
             .define_1(Definition1::CpuFlag(CpuFlag::V))
     }
 
-    fn set_cpu_v(&self, variable: Variable1) {
+    fn set_cpu_v(&self, value: Variable1) {
         self.current_block
             .borrow_mut()
             .instructions
             .push(Instruction::Store1 {
                 destination: Destination1::CpuFlag(CpuFlag::V),
-                variable,
+                variable: value,
             });
     }
 
@@ -176,13 +176,13 @@ impl Visitor for CompilerVisitor {
             .define_1(Definition1::CpuFlag(CpuFlag::N))
     }
 
-    fn set_cpu_n(&self, variable: Variable1) {
+    fn set_cpu_n(&self, value: Variable1) {
         self.current_block
             .borrow_mut()
             .instructions
             .push(Instruction::Store1 {
                 destination: Destination1::CpuFlag(CpuFlag::N),
-                variable,
+                variable: value,
             });
     }
 
@@ -192,13 +192,13 @@ impl Visitor for CompilerVisitor {
             .define_8(Definition8::CpuRegister(CpuRegister::A))
     }
 
-    fn set_cpu_a(&self, variable: Variable8) {
+    fn set_cpu_a(&self, value: Variable8) {
         self.current_block
             .borrow_mut()
             .instructions
             .push(Instruction::Store8 {
                 destination: Destination8::CpuRegister(CpuRegister::A),
-                variable,
+                variable: value,
             });
     }
 
@@ -208,13 +208,13 @@ impl Visitor for CompilerVisitor {
             .define_8(Definition8::CpuRegister(CpuRegister::X))
     }
 
-    fn set_cpu_x(&self, variable: Variable8) {
+    fn set_cpu_x(&self, value: Variable8) {
         self.current_block
             .borrow_mut()
             .instructions
             .push(Instruction::Store8 {
                 destination: Destination8::CpuRegister(CpuRegister::X),
-                variable,
+                variable: value,
             });
     }
 
@@ -224,13 +224,13 @@ impl Visitor for CompilerVisitor {
             .define_8(Definition8::CpuRegister(CpuRegister::Y))
     }
 
-    fn set_cpu_y(&self, variable: Variable8) {
+    fn set_cpu_y(&self, value: Variable8) {
         self.current_block
             .borrow_mut()
             .instructions
             .push(Instruction::Store8 {
                 destination: Destination8::CpuRegister(CpuRegister::Y),
-                variable,
+                variable: value,
             });
     }
 
@@ -240,13 +240,13 @@ impl Visitor for CompilerVisitor {
             .define_8(Definition8::CpuRegister(CpuRegister::S))
     }
 
-    fn set_cpu_s(&self, variable: Variable8) {
+    fn set_cpu_s(&self, value: Variable8) {
         self.current_block
             .borrow_mut()
             .instructions
             .push(Instruction::Store8 {
                 destination: Destination8::CpuRegister(CpuRegister::S),
-                variable,
+                variable: value,
             });
     }
 
@@ -256,13 +256,13 @@ impl Visitor for CompilerVisitor {
             .define_8(Definition8::CpuRegister(CpuRegister::P))
     }
 
-    fn set_cpu_p(&self, variable: Variable8) {
+    fn set_cpu_p(&self, value: Variable8) {
         self.current_block
             .borrow_mut()
             .instructions
             .push(Instruction::Store8 {
                 destination: Destination8::CpuRegister(CpuRegister::P),
-                variable,
+                variable: value,
             });
     }
 
@@ -274,13 +274,13 @@ impl Visitor for CompilerVisitor {
         self.define_16(Definition16::PpuCurrentAddress)
     }
 
-    fn set_ppu_current_address(&self, variable: Variable16) {
+    fn set_ppu_current_address(&self, value: Variable16) {
         self.current_block
             .borrow_mut()
             .instructions
             .push(Instruction::Store16 {
                 destination: Destination16::PpuCurrentAddress,
-                variable,
+                variable: value,
             });
     }
 
@@ -288,13 +288,13 @@ impl Visitor for CompilerVisitor {
         self.define_8(Definition8::CpuRam(address))
     }
 
-    fn set_cpu_ram(&self, address: Variable16, variable: Variable8) {
+    fn set_cpu_ram(&self, address: Variable16, value: Variable8) {
         self.current_block
             .borrow_mut()
             .instructions
             .push(Instruction::Store8 {
                 destination: Destination8::CpuRam(address),
-                variable,
+                variable: value,
             });
     }
 
@@ -302,13 +302,13 @@ impl Visitor for CompilerVisitor {
         self.define_8(Definition8::PrgRam(address))
     }
 
-    fn set_prg_ram(&self, address: Variable16, variable: Variable8) {
+    fn set_prg_ram(&self, address: Variable16, value: Variable8) {
         self.current_block
             .borrow_mut()
             .instructions
             .push(Instruction::Store8 {
                 destination: Destination8::PrgRam(address),
-                variable,
+                variable: value,
             });
     }
 
@@ -316,13 +316,13 @@ impl Visitor for CompilerVisitor {
         self.define_8(Definition8::PpuRam(address))
     }
 
-    fn set_ppu_ram(&self, address: Variable16, variable: Variable8) {
+    fn set_ppu_ram(&self, address: Variable16, value: Variable8) {
         self.current_block
             .borrow_mut()
             .instructions
             .push(Instruction::Store8 {
                 destination: Destination8::PpuRam(address),
-                variable,
+                variable: value,
             });
     }
 
@@ -330,8 +330,11 @@ impl Visitor for CompilerVisitor {
         self.define_8(Definition8::Rom(address))
     }
 
-    fn get_bit(&mut self, operand: Variable8, index: u8) -> Variable1 {
-        self.define_1(Definition1::U8Bit { operand, index })
+    fn get_bit(&mut self, value: Variable8, bit_index: u8) -> Variable1 {
+        self.define_1(Definition1::U8Bit {
+            operand: value,
+            index: bit_index,
+        })
     }
 
     fn not(&mut self, operand: Variable1) -> Variable1 {
@@ -375,18 +378,21 @@ impl Visitor for CompilerVisitor {
     fn select(
         &mut self,
         condition: Variable1,
-        result_if_true: Variable16,
-        result_if_false: Variable16,
+        value_if_true: Variable16,
+        value_if_false: Variable16,
     ) -> Variable16 {
         self.define_16(Definition16::Select {
             condition,
-            result_if_true,
-            result_if_false,
+            result_if_true: value_if_true,
+            result_if_false: value_if_false,
         })
     }
 
-    fn concatenate(&mut self, high: Variable8, low: Variable8) -> Variable16 {
-        self.define_16(Definition16::FromU8s { high, low })
+    fn concatenate(&mut self, operand_0: Variable8, operand_1: Variable8) -> Variable16 {
+        self.define_16(Definition16::FromU8s {
+            high: operand_0,
+            low: operand_1,
+        })
     }
 
     fn or(&mut self, operand_0: Variable8, operand_1: Variable8) -> Variable8 {
@@ -493,18 +499,18 @@ impl Visitor for CompilerVisitor {
     fn if_else(
         &mut self,
         condition: Variable1,
-        populate_true_block: impl Fn(&mut CompilerVisitor),
-        populate_false_block: impl Fn(&mut CompilerVisitor),
+        visit_true: impl Fn(&mut CompilerVisitor),
+        visit_false: impl Fn(&mut CompilerVisitor),
     ) {
         let unused_variable = self.define_8(0);
         self.if_else_with_result(
             condition,
             |block| {
-                populate_true_block(block);
+                visit_true(block);
                 unused_variable
             },
             |block| {
-                populate_false_block(block);
+                visit_false(block);
                 unused_variable
             },
         );
@@ -513,8 +519,8 @@ impl Visitor for CompilerVisitor {
     fn if_else_with_result(
         &mut self,
         condition: Variable1,
-        populate_true_block: impl Fn(&mut CompilerVisitor) -> Variable8,
-        populate_false_block: impl Fn(&mut CompilerVisitor) -> Variable8,
+        visit_true: impl Fn(&mut CompilerVisitor) -> Variable8,
+        visit_false: impl Fn(&mut CompilerVisitor) -> Variable8,
     ) -> Variable8 {
         let r#true = self.define_1(true);
 
@@ -531,7 +537,7 @@ impl Visitor for CompilerVisitor {
         let mut true_block_visitor = CompilerVisitor {
             current_block: true_block,
         };
-        let true_value = populate_true_block(&mut true_block_visitor);
+        let true_value = visit_true(&mut true_block_visitor);
         let true_block = true_block_visitor.current_block;
         true_block.borrow_mut().jump = Jump::BasicBlock {
             condition: r#true,
@@ -547,7 +553,7 @@ impl Visitor for CompilerVisitor {
         let mut false_block_visitor = CompilerVisitor {
             current_block: false_block,
         };
-        let false_value = populate_false_block(&mut false_block_visitor);
+        let false_value = visit_false(&mut false_block_visitor);
         let false_block = false_block_visitor.current_block;
         false_block.borrow_mut().jump = Jump::BasicBlock {
             condition: r#true,
