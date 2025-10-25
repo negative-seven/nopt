@@ -38,52 +38,182 @@ impl CompilerVisitor {
         Destination1::CpuFlag(CpuFlag::C)
     }
 
+    fn set_cpu_c(&self, variable: Variable1) {
+        self.current_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store1 {
+                destination: Destination1::CpuFlag(CpuFlag::C),
+                variable,
+            });
+    }
+
     pub(crate) fn cpu_z(&self) -> Destination1 {
         Destination1::CpuFlag(CpuFlag::Z)
+    }
+
+    fn set_cpu_z(&self, variable: Variable1) {
+        self.current_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store1 {
+                destination: Destination1::CpuFlag(CpuFlag::Z),
+                variable,
+            });
     }
 
     pub(crate) fn cpu_i(&self) -> Destination1 {
         Destination1::CpuFlag(CpuFlag::I)
     }
 
+    fn set_cpu_i(&self, variable: Variable1) {
+        self.current_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store1 {
+                destination: Destination1::CpuFlag(CpuFlag::I),
+                variable,
+            });
+    }
+
     pub(crate) fn cpu_d(&self) -> Destination1 {
         Destination1::CpuFlag(CpuFlag::D)
+    }
+
+    fn set_cpu_d(&self, variable: Variable1) {
+        self.current_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store1 {
+                destination: Destination1::CpuFlag(CpuFlag::D),
+                variable,
+            });
     }
 
     pub(crate) fn cpu_b(&self) -> Destination1 {
         Destination1::CpuFlag(CpuFlag::B)
     }
 
+    fn set_cpu_b(&self, variable: Variable1) {
+        self.current_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store1 {
+                destination: Destination1::CpuFlag(CpuFlag::B),
+                variable,
+            });
+    }
+
     pub(crate) fn cpu_unused_flag(&self) -> Destination1 {
         Destination1::CpuFlag(CpuFlag::Unused)
+    }
+
+    fn set_cpu_unused_flag(&self, variable: Variable1) {
+        self.current_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store1 {
+                destination: Destination1::CpuFlag(CpuFlag::Unused),
+                variable,
+            });
     }
 
     pub(crate) fn cpu_v(&self) -> Destination1 {
         Destination1::CpuFlag(CpuFlag::V)
     }
 
+    fn set_cpu_v(&self, variable: Variable1) {
+        self.current_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store1 {
+                destination: Destination1::CpuFlag(CpuFlag::V),
+                variable,
+            });
+    }
+
     pub(crate) fn cpu_n(&self) -> Destination1 {
         Destination1::CpuFlag(CpuFlag::N)
+    }
+
+    fn set_cpu_n(&self, variable: Variable1) {
+        self.current_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store1 {
+                destination: Destination1::CpuFlag(CpuFlag::N),
+                variable,
+            });
     }
 
     pub(crate) fn cpu_a(&self) -> Destination8 {
         Destination8::CpuRegister(CpuRegister::A)
     }
 
+    fn set_cpu_a(&self, variable: Variable8) {
+        self.current_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store8 {
+                destination: Destination8::CpuRegister(CpuRegister::A),
+                variable,
+            });
+    }
+
     pub(crate) fn cpu_x(&self) -> Destination8 {
         Destination8::CpuRegister(CpuRegister::X)
+    }
+
+    fn set_cpu_x(&self, variable: Variable8) {
+        self.current_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store8 {
+                destination: Destination8::CpuRegister(CpuRegister::X),
+                variable,
+            });
     }
 
     pub(crate) fn cpu_y(&self) -> Destination8 {
         Destination8::CpuRegister(CpuRegister::Y)
     }
 
+    fn set_cpu_y(&self, variable: Variable8) {
+        self.current_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store8 {
+                destination: Destination8::CpuRegister(CpuRegister::Y),
+                variable,
+            });
+    }
+
     pub(crate) fn cpu_s(&self) -> Destination8 {
         Destination8::CpuRegister(CpuRegister::S)
     }
 
+    fn set_cpu_s(&self, variable: Variable8) {
+        self.current_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store8 {
+                destination: Destination8::CpuRegister(CpuRegister::S),
+                variable,
+            });
+    }
+
     pub(crate) fn cpu_p(&self) -> Destination8 {
         Destination8::CpuRegister(CpuRegister::P)
+    }
+
+    fn set_cpu_p(&self, variable: Variable8) {
+        self.current_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store8 {
+                destination: Destination8::CpuRegister(CpuRegister::P),
+                variable,
+            });
     }
 
     fn cpu_pc(&mut self) -> Variable16 {
@@ -94,16 +224,56 @@ impl CompilerVisitor {
         self.define_16(Definition16::PpuCurrentAddress)
     }
 
+    fn set_ppu_current_address(&self, variable: Variable16) {
+        self.current_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store16 {
+                destination: Destination16::PpuCurrentAddress,
+                variable,
+            });
+    }
+
     fn cpu_ram(&mut self, address: Variable16) -> Variable8 {
         self.define_8(Definition8::CpuRam(address))
+    }
+
+    fn set_cpu_ram(&self, address: Variable16, variable: Variable8) {
+        self.current_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store8 {
+                destination: Destination8::CpuRam(address),
+                variable,
+            });
     }
 
     fn prg_ram(&mut self, address: Variable16) -> Variable8 {
         self.define_8(Definition8::PrgRam(address))
     }
 
+    fn set_prg_ram(&self, address: Variable16, variable: Variable8) {
+        self.current_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store8 {
+                destination: Destination8::PrgRam(address),
+                variable,
+            });
+    }
+
     fn ppu_ram(&mut self, address: Variable16) -> Variable8 {
         self.define_8(Definition8::PpuRam(address))
+    }
+
+    fn set_ppu_ram(&self, address: Variable16, variable: Variable8) {
+        self.current_block
+            .borrow_mut()
+            .instructions
+            .push(Instruction::Store8 {
+                destination: Destination8::PpuRam(address),
+                variable,
+            });
     }
 
     fn rom(&mut self, address: Variable16) -> Variable8 {
@@ -268,36 +438,6 @@ impl CompilerVisitor {
 
     pub(crate) fn define_16(&mut self, definition: impl Into<Definition16>) -> Variable16 {
         self.current_block.borrow_mut().define_16(definition.into())
-    }
-
-    pub(crate) fn store_1(&mut self, destination: impl Into<Destination1>, register: Variable1) {
-        self.current_block
-            .borrow_mut()
-            .instructions
-            .push(Instruction::Store1 {
-                variable: register,
-                destination: destination.into(),
-            });
-    }
-
-    pub(crate) fn store_8(&mut self, destination: impl Into<Destination8>, register: Variable8) {
-        self.current_block
-            .borrow_mut()
-            .instructions
-            .push(Instruction::Store8 {
-                variable: register,
-                destination: destination.into(),
-            });
-    }
-
-    pub(crate) fn store_16(&mut self, destination: impl Into<Destination16>, register: Variable16) {
-        self.current_block
-            .borrow_mut()
-            .instructions
-            .push(Instruction::Store16 {
-                variable: register,
-                destination: destination.into(),
-            });
     }
 
     pub(super) fn if_else(

@@ -4,8 +4,8 @@ use crate::{
     compiler::{
         frontend::CompilerVisitor,
         ir::{
-            CpuFlag, Definition1, Definition8, Definition16, Destination1, Destination8, Jump,
-            Variable1, Variable8, Variable16,
+            CpuFlag, CpuRegister, Definition1, Definition8, Definition16, Destination1,
+            Destination8, Jump, Variable1, Variable8, Variable16,
         },
     },
     nes_assembly,
@@ -538,12 +538,30 @@ impl Compiler {
         self.define_16(high % low)
     }
 
-    fn store_1(&mut self, destination: impl Into<Destination1>, register: Variable1) {
-        self.visitor.store_1(destination, register);
+    fn store_1(&mut self, destination: impl Into<Destination1>, variable: Variable1) {
+        match destination.into() {
+            Destination1::CpuFlag(CpuFlag::C) => self.visitor.set_cpu_c(variable),
+            Destination1::CpuFlag(CpuFlag::Z) => self.visitor.set_cpu_z(variable),
+            Destination1::CpuFlag(CpuFlag::I) => self.visitor.set_cpu_i(variable),
+            Destination1::CpuFlag(CpuFlag::D) => self.visitor.set_cpu_d(variable),
+            Destination1::CpuFlag(CpuFlag::B) => self.visitor.set_cpu_b(variable),
+            Destination1::CpuFlag(CpuFlag::Unused) => self.visitor.set_cpu_unused_flag(variable),
+            Destination1::CpuFlag(CpuFlag::V) => self.visitor.set_cpu_v(variable),
+            Destination1::CpuFlag(CpuFlag::N) => self.visitor.set_cpu_n(variable),
+        }
     }
 
-    fn store_8(&mut self, destination: impl Into<Destination8>, register: Variable8) {
-        self.visitor.store_8(destination, register);
+    fn store_8(&mut self, destination: impl Into<Destination8>, variable: Variable8) {
+        match destination.into() {
+            Destination8::CpuRam(address) => self.visitor.set_cpu_ram(address, variable),
+            Destination8::PpuRam(address) => self.visitor.set_ppu_ram(address, variable),
+            Destination8::PrgRam(address) => self.visitor.set_prg_ram(address, variable),
+            Destination8::CpuRegister(CpuRegister::A) => self.visitor.set_cpu_a(variable),
+            Destination8::CpuRegister(CpuRegister::X) => self.visitor.set_cpu_x(variable),
+            Destination8::CpuRegister(CpuRegister::Y) => self.visitor.set_cpu_y(variable),
+            Destination8::CpuRegister(CpuRegister::S) => self.visitor.set_cpu_s(variable),
+            Destination8::CpuRegister(CpuRegister::P) => self.visitor.set_cpu_p(variable),
+        }
     }
 
     fn set_nz(&mut self, value: Variable8) {
