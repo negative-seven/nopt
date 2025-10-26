@@ -83,7 +83,7 @@ pub(super) fn write<Visitor: super::Visitor>(
             );
         };
 
-    if_address_in_range(0x0..=0x7ff, |visitor, address, value| {
+    if_address_in_range(0x0..=0x7ff, |mut visitor, address, value| {
         visitor.set_cpu_ram(address, value);
     });
     if_address_in_range(0x2006..=0x2006, |mut visitor, _, value| {
@@ -92,7 +92,7 @@ pub(super) fn write<Visitor: super::Visitor>(
     if_address_in_range(0x2007..=0x2007, |mut visitor, _, value| {
         ppu::write_ppudata(&mut visitor, value);
     });
-    if_address_in_range(0x6000..=0x7fff, |visitor, address, value| {
+    if_address_in_range(0x6000..=0x7fff, |mut visitor, address, value| {
         visitor.set_prg_ram(address, value);
     });
 }

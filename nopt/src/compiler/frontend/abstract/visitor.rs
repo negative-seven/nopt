@@ -16,71 +16,71 @@ pub(crate) trait Visitor: Sized {
         self.concatenate(high, low)
     }
 
-    fn cpu_c(&self) -> Self::U1;
+    fn cpu_c(&mut self) -> Self::U1;
 
-    fn set_cpu_c(&self, value: Self::U1);
+    fn set_cpu_c(&mut self, value: Self::U1);
 
-    fn cpu_z(&self) -> Self::U1;
+    fn cpu_z(&mut self) -> Self::U1;
 
-    fn set_cpu_z(&self, value: Self::U1);
+    fn set_cpu_z(&mut self, value: Self::U1);
 
-    fn set_cpu_i(&self, value: Self::U1);
+    fn set_cpu_i(&mut self, value: Self::U1);
 
-    fn set_cpu_d(&self, value: Self::U1);
+    fn set_cpu_d(&mut self, value: Self::U1);
 
-    fn cpu_b(&self) -> Self::U1;
+    fn cpu_b(&mut self) -> Self::U1;
 
-    fn set_cpu_b(&self, value: Self::U1);
+    fn set_cpu_b(&mut self, value: Self::U1);
 
-    fn cpu_unused_flag(&self) -> Self::U1;
+    fn cpu_unused_flag(&mut self) -> Self::U1;
 
-    fn set_cpu_unused_flag(&self, value: Self::U1);
+    fn set_cpu_unused_flag(&mut self, value: Self::U1);
 
-    fn cpu_v(&self) -> Self::U1;
+    fn cpu_v(&mut self) -> Self::U1;
 
-    fn set_cpu_v(&self, value: Self::U1);
+    fn set_cpu_v(&mut self, value: Self::U1);
 
-    fn cpu_n(&self) -> Self::U1;
+    fn cpu_n(&mut self) -> Self::U1;
 
-    fn set_cpu_n(&self, value: Self::U1);
+    fn set_cpu_n(&mut self, value: Self::U1);
 
-    fn cpu_a(&self) -> Self::U8;
+    fn cpu_a(&mut self) -> Self::U8;
 
-    fn set_cpu_a(&self, value: Self::U8);
+    fn set_cpu_a(&mut self, value: Self::U8);
 
-    fn cpu_x(&self) -> Self::U8;
+    fn cpu_x(&mut self) -> Self::U8;
 
-    fn set_cpu_x(&self, value: Self::U8);
+    fn set_cpu_x(&mut self, value: Self::U8);
 
-    fn cpu_y(&self) -> Self::U8;
+    fn cpu_y(&mut self) -> Self::U8;
 
-    fn set_cpu_y(&self, value: Self::U8);
+    fn set_cpu_y(&mut self, value: Self::U8);
 
-    fn cpu_s(&self) -> Self::U8;
+    fn cpu_s(&mut self) -> Self::U8;
 
-    fn set_cpu_s(&self, value: Self::U8);
+    fn set_cpu_s(&mut self, value: Self::U8);
 
-    fn cpu_p(&self) -> Self::U8;
+    fn cpu_p(&mut self) -> Self::U8;
 
-    fn set_cpu_p(&self, value: Self::U8);
+    fn set_cpu_p(&mut self, value: Self::U8);
 
     fn cpu_pc(&mut self) -> Self::U16;
 
     fn ppu_current_address(&mut self) -> Self::U16;
 
-    fn set_ppu_current_address(&self, value: Self::U16);
+    fn set_ppu_current_address(&mut self, value: Self::U16);
 
     fn cpu_ram(&mut self, address: Self::U16) -> Self::U8;
 
-    fn set_cpu_ram(&self, address: Self::U16, value: Self::U8);
+    fn set_cpu_ram(&mut self, address: Self::U16, value: Self::U8);
 
     fn prg_ram(&mut self, address: Self::U16) -> Self::U8;
 
-    fn set_prg_ram(&self, address: Self::U16, value: Self::U8);
+    fn set_prg_ram(&mut self, address: Self::U16, value: Self::U8);
 
     fn ppu_ram(&mut self, address: Self::U16) -> Self::U8;
 
-    fn set_ppu_ram(&self, address: Self::U16, value: Self::U8);
+    fn set_ppu_ram(&mut self, address: Self::U16, value: Self::U8);
 
     fn rom(&mut self, address: Self::U16) -> Self::U8;
 
