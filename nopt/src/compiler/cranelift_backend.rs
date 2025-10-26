@@ -125,6 +125,11 @@ impl Compiler {
             .iconst(self.isa.pointer_type(), unsafe {
                 (*self.nes).ppu.ram.as_ptr() as i64
             });
+        let nes_ppu_palette_ram_address = function_builder
+            .ins()
+            .iconst(self.isa.pointer_type(), unsafe {
+                (*self.nes).ppu.palette_ram.as_ptr() as i64
+            });
         let nes_prg_ram_address = function_builder
             .ins()
             .iconst(self.isa.pointer_type(), unsafe {
@@ -338,6 +343,19 @@ impl Compiler {
                                 .ins()
                                 .load(type_u8, MemFlags::new(), address, 0)
                         }
+                        ir::Definition8::PpuPaletteRam(variable) => {
+                            let ppu_address = function_builder
+                                .ins()
+                                .uextend(self.isa.pointer_type(), self.value_16(*variable));
+                            let index = function_builder.ins().band_imm(ppu_address, 0x1f);
+                            let address = function_builder
+                                .ins()
+                                .uadd_overflow(nes_ppu_palette_ram_address, index)
+                                .0;
+                            function_builder
+                                .ins()
+                                .load(type_u8, MemFlags::new(), address, 0)
+                        }
                         ir::Definition8::PrgRam(variable) => {
                             let cpu_address = function_builder
                                 .ins()
@@ -535,6 +553,21 @@ impl Compiler {
                             .uextend(self.isa.pointer_type(), self.value_16(*address));
                         let index = function_builder.ins().band_imm(address, 0x1fff);
                         let address = function_builder.ins().iadd(nes_ppu_ram_address, index);
+                        function_builder.ins().store(
+                            MemFlags::new(),
+                            self.value_8(*variable),
+                            address,
+                            0,
+                        );
+                    }
+                    ir::Destination8::PpuPaletteRam(address) => {
+                        let address = function_builder
+                            .ins()
+                            .uextend(self.isa.pointer_type(), self.value_16(*address));
+                        let index = function_builder.ins().band_imm(address, 0x1f);
+                        let address = function_builder
+                            .ins()
+                            .iadd(nes_ppu_palette_ram_address, index);
                         function_builder.ins().store(
                             MemFlags::new(),
                             self.value_8(*variable),

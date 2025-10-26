@@ -224,6 +224,14 @@ impl Visitor for CompilerVisitor {
         self.store_8(Destination8::PpuRam(address), value);
     }
 
+    fn ppu_palette_ram(&mut self, address: Variable16) -> Variable8 {
+        self.define_8(Definition8::PpuPaletteRam(address))
+    }
+
+    fn set_ppu_palette_ram(&mut self, address: Variable16, value: Variable8) {
+        self.store_8(Destination8::PpuPaletteRam(address), value);
+    }
+
     fn rom(&mut self, address: Variable16) -> Variable8 {
         self.define_8(Definition8::Rom(address))
     }

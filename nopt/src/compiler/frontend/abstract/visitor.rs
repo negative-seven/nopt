@@ -84,6 +84,10 @@ pub(crate) trait Visitor: Sized {
 
     fn set_ppu_ram(&mut self, address: Self::U16, value: Self::U8);
 
+    fn ppu_palette_ram(&mut self, address: Self::U16) -> Self::U8;
+
+    fn set_ppu_palette_ram(&mut self, address: Self::U16, value: Self::U8);
+
     fn rom(&mut self, address: Self::U16) -> Self::U8;
 
     fn get_bit(&mut self, value: Self::U8, bit_index: u8) -> Self::U1;

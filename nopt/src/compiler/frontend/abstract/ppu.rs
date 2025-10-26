@@ -46,13 +46,24 @@ fn read<Visitor: super::Visitor>(visitor: &mut Visitor, address: Visitor::U16) -
     };
 
     let value = visitor.immediate_u8(0);
-    if_address_in_range(
+    let value = if_address_in_range(
         visitor,
         0x2000..=0x3eff,
         |mut visitor, address| {
             let address_mask = visitor.immediate_u16(0xfff);
             let address = visitor.and_u16(address, address_mask);
             let value = visitor.ppu_ram(address);
+            visitor.terminate(Some(value));
+        },
+        value,
+    );
+    if_address_in_range(
+        visitor,
+        0x3f00..=0x3fff,
+        |mut visitor, address| {
+            let address_mask = visitor.immediate_u16(0x1f);
+            let address = visitor.and_u16(address, address_mask);
+            let value = visitor.ppu_palette_ram(address);
             visitor.terminate(Some(value));
         },
         value,
@@ -87,6 +98,12 @@ fn write<Visitor: super::Visitor>(
         let address_mask = visitor.immediate_u16(0xfff);
         let address = visitor.and_u16(address, address_mask);
         visitor.set_ppu_ram(address, value);
+        visitor.terminate(None);
+    });
+    if_address_in_range(0x3f00..=0x3fff, |mut visitor, address, value| {
+        let address_mask = visitor.immediate_u16(0x1f);
+        let address = visitor.and_u16(address, address_mask);
+        visitor.set_ppu_palette_ram(address, value);
         visitor.terminate(None);
     });
 }

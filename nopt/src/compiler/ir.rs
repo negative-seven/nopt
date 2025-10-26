@@ -338,6 +338,7 @@ pub(crate) enum Definition8 {
     CpuRegister(CpuRegister),
     CpuRam(Variable16),
     PpuRam(Variable16),
+    PpuPaletteRam(Variable16),
     PrgRam(Variable16),
     Rom(Variable16),
     LowByte(Variable16),
@@ -373,6 +374,7 @@ impl Debug for Definition8 {
             Self::CpuRegister(cpu_register) => write!(f, "{cpu_register:?}"),
             Self::CpuRam(variable) => write!(f, "cpu_ram[{variable:?}]"),
             Self::PpuRam(variable) => write!(f, "ppu_ram[{variable:?}]"),
+            Self::PpuPaletteRam(variable) => write!(f, "ppu_palette_ram[{variable:?}]"),
             Self::PrgRam(variable) => write!(f, "prg_ram[{variable:?}]"),
             Self::Rom(variable) => write!(f, "rom[{variable:?}]"),
             Self::LowByte(variable) => write!(f, "<{variable:?}"),
@@ -407,6 +409,7 @@ pub(super) enum Destination8 {
     CpuRegister(CpuRegister),
     CpuRam(Variable16),
     PpuRam(Variable16),
+    PpuPaletteRam(Variable16),
     PrgRam(Variable16),
 }
 
@@ -416,6 +419,7 @@ impl Debug for Destination8 {
             Self::CpuRegister(u8) => write!(f, "{u8:?}"),
             Self::CpuRam(variable) => write!(f, "cpu_ram[{variable:?}]"),
             Self::PpuRam(variable) => write!(f, "ppu_ram[{variable:?}]"),
+            Self::PpuPaletteRam(variable) => write!(f, "ppu_palette_ram[{variable:?}]"),
             Self::PrgRam(variable) => write!(f, "prg_ram[{variable:?}]"),
         }
     }
