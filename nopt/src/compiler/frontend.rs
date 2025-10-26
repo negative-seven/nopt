@@ -186,6 +186,10 @@ impl Visitor for CompilerVisitor {
         self.define_16(Definition16::Pc)
     }
 
+    fn set_cpu_pc(&mut self, value: Variable16) {
+        self.store_16(Destination16::CpuPc, value);
+    }
+
     fn ppu_current_address(&mut self) -> Variable16 {
         self.define_16(Definition16::PpuCurrentAddress)
     }
@@ -457,7 +461,7 @@ impl Visitor for CompilerVisitor {
         result
     }
 
-    fn jump(self, address: Variable16) {
-        self.current_block.borrow_mut().jump = Jump::CpuAddress(address);
+    fn terminate(self) {
+        self.current_block.borrow_mut().jump = Jump::Return;
     }
 }

@@ -65,7 +65,7 @@ impl Compiler {
                     trace_ir_basic_block_recursively(target_if_true, visited);
                     trace_ir_basic_block_recursively(target_if_false, visited);
                 }
-                ir::Jump::CpuAddress(_) => {}
+                ir::Jump::Return => {}
             }
         }
 

@@ -66,6 +66,8 @@ pub(crate) trait Visitor: Sized {
 
     fn cpu_pc(&mut self) -> Self::U16;
 
+    fn set_cpu_pc(&mut self, value: Self::U16);
+
     fn ppu_current_address(&mut self) -> Self::U16;
 
     fn set_ppu_current_address(&mut self, value: Self::U16);
@@ -206,5 +208,5 @@ pub(crate) trait Visitor: Sized {
         visit_false: impl Fn(Self) -> Self::U8,
     ) -> Self::U8;
 
-    fn jump(self, address: Self::U16);
+    fn terminate(self);
 }

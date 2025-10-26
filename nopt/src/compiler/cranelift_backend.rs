@@ -557,13 +557,17 @@ impl Compiler {
                     }
                 },
                 ir::Instruction::Store16 {
-                    destination: Destination16::PpuCurrentAddress,
+                    destination,
                     variable,
                 } => {
+                    let address = match destination {
+                        Destination16::CpuPc => nes_cpu_pc_address,
+                        Destination16::PpuCurrentAddress => nes_ppu_current_address_address,
+                    };
                     function_builder.ins().store(
                         MemFlags::new(),
                         self.value_16(*variable),
-                        nes_ppu_current_address_address,
+                        address,
                         0,
                     );
                 }
@@ -571,13 +575,7 @@ impl Compiler {
         }
 
         match &ir.borrow().jump {
-            ir::Jump::CpuAddress(cpu_address) => {
-                function_builder.ins().store(
-                    MemFlags::new(),
-                    self.value_16(*cpu_address),
-                    nes_cpu_pc_address,
-                    0,
-                );
+            ir::Jump::Return => {
                 function_builder.ins().return_(&[]);
             }
             ir::Jump::BasicBlock {

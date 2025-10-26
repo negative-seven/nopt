@@ -22,7 +22,7 @@ impl BasicBlock {
             variable_id_counter,
             has_argument: false,
             instructions: vec![],
-            jump: Jump::CpuAddress(Variable16 { id: usize::MAX }), // TODO: don't use dummy variable
+            jump: Jump::Return,
         }
     }
 
@@ -131,13 +131,13 @@ pub(crate) enum Jump {
         target_if_false: Rc<RefCell<BasicBlock>>,
         target_if_false_argument: Option<Variable8>,
     },
-    CpuAddress(Variable16),
+    Return,
 }
 
 impl Debug for Jump {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::CpuAddress(cpu_address) => write!(f, "jump to {cpu_address:?}"),
+            Self::Return => write!(f, "return"),
             Self::BasicBlock {
                 condition,
                 target_if_true: _,
@@ -467,12 +467,14 @@ impl Debug for Definition16 {
 
 #[derive(Clone)]
 pub(super) enum Destination16 {
+    CpuPc,
     PpuCurrentAddress,
 }
 
 impl Debug for Destination16 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::CpuPc => write!(f, "cpu_pc"),
             Self::PpuCurrentAddress => write!(f, "ppu_current_address"),
         }
     }

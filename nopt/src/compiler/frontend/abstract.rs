@@ -489,11 +489,12 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
             }
         }
 
-        let jump = jump_target.unwrap_or(
+        let pc = jump_target.unwrap_or(
             self.visitor
                 .immediate_u16(self.cpu_instruction.address_end()),
         );
-        self.visitor.jump(jump);
+        self.visitor.set_cpu_pc(pc);
+        self.visitor.terminate();
     }
 
     fn read_u16_deref(&mut self, address: Visitor::U16) -> Visitor::U16 {
