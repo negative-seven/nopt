@@ -9,12 +9,20 @@ pub(super) fn write_ppuaddr<Visitor: super::Visitor>(visitor: &mut Visitor, valu
 }
 
 pub(super) fn read_ppudata<Visitor: super::Visitor>(visitor: &mut Visitor) -> Visitor::U8 {
+    let n1 = visitor.immediate_u16(1);
+
     let address = visitor.ppu_current_address();
+    let address_plus_one = visitor.add_u16(address, n1);
+    visitor.set_ppu_current_address(address_plus_one);
     read(visitor, address)
 }
 
 pub(super) fn write_ppudata<Visitor: super::Visitor>(visitor: &mut Visitor, value: Visitor::U8) {
+    let n1 = visitor.immediate_u16(1);
+
     let address = visitor.ppu_current_address();
+    let address_plus_one = visitor.add_u16(address, n1);
+    visitor.set_ppu_current_address(address_plus_one);
     write(visitor, address, value);
 }
 
