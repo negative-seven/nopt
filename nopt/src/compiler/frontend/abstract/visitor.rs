@@ -117,6 +117,18 @@ pub(crate) trait Visitor: Sized {
 
     fn and_u8(&mut self, operand_0: Self::U8, operand_1: Self::U8) -> Self::U8;
 
+    fn and_u16(&mut self, operand_0: Self::U16, operand_1: Self::U16) -> Self::U16 {
+        let operand_0_low = self.low_byte(operand_0);
+        let operand_1_low = self.low_byte(operand_1);
+        let result_low = self.and_u8(operand_0_low, operand_1_low);
+
+        let operand_0_high = self.high_byte(operand_0);
+        let operand_1_high = self.high_byte(operand_1);
+        let result_high = self.and_u8(operand_0_high, operand_1_high);
+
+        self.concatenate(result_high, result_low)
+    }
+
     fn xor(&mut self, operand_0: Self::U8, operand_1: Self::U8) -> Self::U8;
 
     fn add_u8(&mut self, operand_0: Self::U8, operand_1: Self::U8) -> Self::U8 {
