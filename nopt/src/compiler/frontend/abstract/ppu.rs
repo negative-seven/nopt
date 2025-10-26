@@ -9,21 +9,39 @@ pub(super) fn write_ppuaddr<Visitor: super::Visitor>(visitor: &mut Visitor, valu
 }
 
 pub(super) fn read_ppudata<Visitor: super::Visitor>(visitor: &mut Visitor) -> Visitor::U8 {
-    let n1 = visitor.immediate_u16(1);
-
     let address = visitor.ppu_current_address();
-    let address_plus_one = visitor.add_u16(address, n1);
-    visitor.set_ppu_current_address(address_plus_one);
+    increment_ppu_current_address(visitor);
     read(visitor, address)
 }
 
 pub(super) fn write_ppudata<Visitor: super::Visitor>(visitor: &mut Visitor, value: Visitor::U8) {
-    let n1 = visitor.immediate_u16(1);
+    let address = visitor.ppu_current_address();
+    increment_ppu_current_address(visitor);
+    write(visitor, address, value);
+}
+
+fn increment_ppu_current_address<Visitor: super::Visitor>(visitor: &mut Visitor) {
+    let n0 = visitor.immediate_u8(0);
 
     let address = visitor.ppu_current_address();
-    let address_plus_one = visitor.add_u16(address, n1);
-    visitor.set_ppu_current_address(address_plus_one);
-    write(visitor, address, value);
+    let address_increment = {
+        let control_register = visitor.ppu_control_register();
+        let control_register_increment_bit = visitor.get_bit(control_register, 2);
+        let increment = visitor.if_else_with_result(
+            control_register_increment_bit,
+            |mut visitor| {
+                let n32 = visitor.immediate_u8(32);
+                visitor.terminate(Some(n32));
+            },
+            |mut visitor| {
+                let n1 = visitor.immediate_u8(1);
+                visitor.terminate(Some(n1));
+            },
+        );
+        visitor.concatenate(n0, increment)
+    };
+    let incremented_address = visitor.add_u16(address, address_increment);
+    visitor.set_ppu_current_address(incremented_address);
 }
 
 fn read<Visitor: super::Visitor>(visitor: &mut Visitor, address: Visitor::U16) -> Visitor::U8 {

@@ -61,6 +61,7 @@ impl Cpu {
 pub struct Ppu {
     pub ram: [u8; 0x1000],
     pub palette_ram: [u8; 0x20],
+    pub control_register: u8,
     pub read_buffer: u8,
     pub current_address: u16,
 }
@@ -70,6 +71,7 @@ impl Ppu {
         Self {
             ram: [0; 0x1000],
             palette_ram: [0; 0x20],
+            control_register: 0,
             read_buffer: 0,
             current_address: 0,
         }

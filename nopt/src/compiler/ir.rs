@@ -334,6 +334,7 @@ impl Debug for CpuRegister {
 #[derive(Clone)]
 pub(crate) enum Definition8 {
     BasicBlockArgument,
+    PpuControlRegister,
     PpuReadBuffer,
     Immediate(u8),
     CpuRegister(CpuRegister),
@@ -371,6 +372,7 @@ impl Debug for Definition8 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::BasicBlockArgument => write!(f, "arg"),
+            Self::PpuControlRegister => write!(f, "ppu_control_register"),
             Self::PpuReadBuffer => write!(f, "ppu_read_buffer"),
             Self::Immediate(immediate) => write!(f, "0x{immediate:02x}"),
             Self::CpuRegister(cpu_register) => write!(f, "{cpu_register:?}"),
@@ -408,6 +410,7 @@ impl Debug for Definition8 {
 
 #[derive(Clone)]
 pub(super) enum Destination8 {
+    PpuControlRegister,
     PpuReadBuffer,
     CpuRegister(CpuRegister),
     CpuRam(Variable16),
@@ -419,6 +422,7 @@ pub(super) enum Destination8 {
 impl Debug for Destination8 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::PpuControlRegister => write!(f, "ppu_control_register"),
             Self::PpuReadBuffer => write!(f, "ppu_read_buffer"),
             Self::CpuRegister(u8) => write!(f, "{u8:?}"),
             Self::CpuRam(variable) => write!(f, "cpu_ram[{variable:?}]"),

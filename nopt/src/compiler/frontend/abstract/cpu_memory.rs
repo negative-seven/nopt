@@ -99,6 +99,10 @@ pub(super) fn write<Visitor: super::Visitor>(
         visitor.set_cpu_ram(address, value);
         visitor.terminate(None);
     });
+    if_address_in_range(0x2000..=0x2000, |mut visitor, _, value| {
+        visitor.set_ppu_control_register(value);
+        visitor.terminate(None);
+    });
     if_address_in_range(0x2006..=0x2006, |mut visitor, _, value| {
         ppu::write_ppuaddr(&mut visitor, value);
         visitor.terminate(None);

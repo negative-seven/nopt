@@ -192,6 +192,14 @@ impl Visitor for CompilerVisitor {
         self.store_16(Destination16::CpuPc, value);
     }
 
+    fn ppu_control_register(&mut self) -> Variable8 {
+        self.define_8(Definition8::PpuControlRegister)
+    }
+
+    fn set_ppu_control_register(&mut self, value: Variable8) {
+        self.store_8(Destination8::PpuControlRegister, value);
+    }
+
     fn ppu_read_buffer(&mut self) -> Variable8 {
         self.define_8(Definition8::PpuReadBuffer)
     }
