@@ -8,7 +8,7 @@ pub(super) fn read<Visitor: super::Visitor>(
 ) -> Visitor::U8 {
     let if_address_in_range = |visitor: &mut Visitor,
                                address_range: RangeInclusive<u16>,
-                               visit_true_block: fn(Visitor, Visitor::U16) -> Visitor::U8,
+                               visit_true_block: fn(Visitor, Visitor::U16),
                                false_value: Visitor::U8|
      -> Visitor::U8 {
         let condition = {
@@ -26,7 +26,9 @@ pub(super) fn read<Visitor: super::Visitor>(
         visitor.if_else_with_result(
             condition,
             |visitor| visit_true_block(visitor, address),
-            |_| false_value,
+            |visitor| {
+                visitor.terminate(Some(false_value));
+            },
         )
     };
 
@@ -34,25 +36,37 @@ pub(super) fn read<Visitor: super::Visitor>(
     let value = if_address_in_range(
         visitor,
         0x0..=0x7ff,
-        |mut visitor, address| visitor.cpu_ram(address),
+        |mut visitor, address| {
+            let value = visitor.cpu_ram(address);
+            visitor.terminate(Some(value));
+        },
         value,
     );
     let value = if_address_in_range(
         visitor,
         0x2007..=0x2007,
-        |mut visitor, _| ppu::read_ppudata(&mut visitor),
+        |mut visitor, _| {
+            let value = ppu::read_ppudata(&mut visitor);
+            visitor.terminate(Some(value));
+        },
         value,
     );
     let value = if_address_in_range(
         visitor,
         0x6000..=0x7fff,
-        |mut visitor, address| visitor.prg_ram(address),
+        |mut visitor, address| {
+            let value = visitor.prg_ram(address);
+            visitor.terminate(Some(value));
+        },
         value,
     );
     if_address_in_range(
         visitor,
         0x8000..=0xffff,
-        |mut visitor, address| visitor.rom(address),
+        |mut visitor, address| {
+            let value = visitor.rom(address);
+            visitor.terminate(Some(value));
+        },
         value,
     )
 }
@@ -79,20 +93,26 @@ pub(super) fn write<Visitor: super::Visitor>(
             visitor.if_else(
                 condition,
                 |visitor| visit_true_block(visitor, address, value),
-                |_| {},
+                |visitor| {
+                    visitor.terminate(None);
+                },
             );
         };
 
     if_address_in_range(0x0..=0x7ff, |mut visitor, address, value| {
         visitor.set_cpu_ram(address, value);
+        visitor.terminate(None);
     });
     if_address_in_range(0x2006..=0x2006, |mut visitor, _, value| {
         ppu::write_ppuaddr(&mut visitor, value);
+        visitor.terminate(None);
     });
     if_address_in_range(0x2007..=0x2007, |mut visitor, _, value| {
         ppu::write_ppudata(&mut visitor, value);
+        visitor.terminate(None);
     });
     if_address_in_range(0x6000..=0x7fff, |mut visitor, address, value| {
         visitor.set_prg_ram(address, value);
+        visitor.terminate(None);
     });
 }

@@ -204,9 +204,9 @@ pub(crate) trait Visitor: Sized {
     fn if_else_with_result(
         &mut self,
         condition: Self::U1,
-        visit_true: impl Fn(Self) -> Self::U8,
-        visit_false: impl Fn(Self) -> Self::U8,
+        visit_true: impl Fn(Self),
+        visit_false: impl Fn(Self),
     ) -> Self::U8;
 
-    fn terminate(self);
+    fn terminate(self, argument: Option<Self::U8>);
 }

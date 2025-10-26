@@ -494,7 +494,7 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
                 .immediate_u16(self.cpu_instruction.address_end()),
         );
         self.visitor.set_cpu_pc(pc);
-        self.visitor.terminate();
+        self.visitor.terminate(None);
     }
 
     fn read_u16_deref(&mut self, address: Visitor::U16) -> Visitor::U16 {
