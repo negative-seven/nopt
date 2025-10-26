@@ -206,6 +206,12 @@ pub(crate) trait Visitor: Sized {
         operand_borrow: Self::U1,
     ) -> Self::U1;
 
+    fn r#if(&mut self, condition: Self::U1, visit_true: impl Fn(Self)) {
+        self.if_else(condition, visit_true, |visitor| {
+            visitor.terminate(None);
+        });
+    }
+
     fn if_else(
         &mut self,
         condition: Self::U1,

@@ -78,13 +78,9 @@ fn write<Visitor: super::Visitor>(
                 visitor.and_u1(lower_bound_condition, upper_bound_condition)
             };
 
-            visitor.if_else(
-                condition,
-                |visitor| visit_true_block(visitor, address, value),
-                |visitor| {
-                    visitor.terminate(None);
-                },
-            );
+            visitor.r#if(condition, |visitor| {
+                visit_true_block(visitor, address, value);
+            });
         };
 
     if_address_in_range(0x2000..=0x3eff, |mut visitor, address, value| {
