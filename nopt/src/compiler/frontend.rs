@@ -192,6 +192,14 @@ impl Visitor for CompilerVisitor {
         self.store_16(Destination16::CpuPc, value);
     }
 
+    fn ppu_read_buffer(&mut self) -> Variable8 {
+        self.define_8(Definition8::PpuReadBuffer)
+    }
+
+    fn set_ppu_read_buffer(&mut self, value: Variable8) {
+        self.store_8(Destination8::PpuReadBuffer, value);
+    }
+
     fn ppu_current_address(&mut self) -> Variable16 {
         self.define_16(Definition16::PpuCurrentAddress)
     }

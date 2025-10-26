@@ -50,10 +50,12 @@ fn read<Visitor: super::Visitor>(visitor: &mut Visitor, address: Visitor::U16) -
         visitor,
         0x2000..=0x3eff,
         |mut visitor, address| {
+            let previous_value = visitor.ppu_read_buffer();
             let address_mask = visitor.immediate_u16(0xfff);
             let address = visitor.and_u16(address, address_mask);
             let value = visitor.ppu_ram(address);
-            visitor.terminate(Some(value));
+            visitor.set_ppu_read_buffer(value);
+            visitor.terminate(Some(previous_value));
         },
         value,
     );

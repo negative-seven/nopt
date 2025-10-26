@@ -170,6 +170,11 @@ impl Compiler {
             .iconst(self.isa.pointer_type(), unsafe {
                 &raw mut (*self.nes).cpu.pc as i64
             });
+        let nes_ppu_read_buffer_address = function_builder
+            .ins()
+            .iconst(self.isa.pointer_type(), unsafe {
+                &raw mut (*self.nes).ppu.read_buffer as i64
+            });
         let nes_ppu_current_address_address = function_builder
             .ins()
             .iconst(self.isa.pointer_type(), unsafe {
@@ -302,6 +307,12 @@ impl Compiler {
                 } => {
                     let value = match definition {
                         ir::Definition8::BasicBlockArgument => argument.unwrap(),
+                        ir::Definition8::PpuReadBuffer => function_builder.ins().load(
+                            type_u8,
+                            MemFlags::new(),
+                            nes_ppu_read_buffer_address,
+                            0,
+                        ),
                         ir::Definition8::Immediate(immediate) => function_builder
                             .ins()
                             .iconst(type_u8, i64::from(*immediate)),
@@ -519,6 +530,14 @@ impl Compiler {
                     destination,
                     variable,
                 } => match destination {
+                    ir::Destination8::PpuReadBuffer => {
+                        function_builder.ins().store(
+                            MemFlags::new(),
+                            self.value_8(*variable),
+                            nes_ppu_read_buffer_address,
+                            0,
+                        );
+                    }
                     ir::Destination8::CpuRegister(cpu_register) => {
                         let address = match cpu_register {
                             ir::CpuRegister::A => nes_cpu_a_address,

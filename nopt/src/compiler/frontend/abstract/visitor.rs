@@ -68,6 +68,10 @@ pub(crate) trait Visitor: Sized {
 
     fn set_cpu_pc(&mut self, value: Self::U16);
 
+    fn ppu_read_buffer(&mut self) -> Self::U8;
+
+    fn set_ppu_read_buffer(&mut self, value: Self::U8);
+
     fn ppu_current_address(&mut self) -> Self::U16;
 
     fn set_ppu_current_address(&mut self, value: Self::U16);
