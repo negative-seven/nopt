@@ -5,9 +5,8 @@ use crate::{
     compiler::{
         frontend::r#abstract::{Compiler, Visitor},
         ir::{
-            BasicBlock, CpuFlag, CpuRegister, Definition1, Definition8, Definition16, Destination1,
-            Destination8, Destination16, Function, Instruction, Jump, Variable1, Variable8,
-            Variable16,
+            BasicBlock, CpuRegister, Definition1, Definition8, Definition16, Destination8,
+            Destination16, Function, Instruction, Jump, Variable1, Variable8, Variable16,
         },
     },
     nes::Nes,
@@ -48,16 +47,6 @@ impl CompilerVisitor {
         self.current_block.borrow_mut().define_16(definition)
     }
 
-    fn store_1(&mut self, destination: Destination1, value: Variable1) {
-        self.current_block
-            .borrow_mut()
-            .instructions
-            .push(Instruction::Store1 {
-                destination,
-                variable: value,
-            });
-    }
-
     fn store_8(&mut self, destination: Destination8, value: Variable8) {
         self.current_block
             .borrow_mut()
@@ -77,6 +66,30 @@ impl CompilerVisitor {
                 variable: value,
             });
     }
+
+    fn get_cpu_flag<const INDEX: u8>(&mut self) -> Variable1 {
+        let p = self.cpu_p();
+        self.get_bit(p, INDEX)
+    }
+
+    fn set_cpu_flag<const INDEX: u8>(&mut self, value: Variable1) {
+        let clear_bit_mask = self.immediate_u8(!(1 << INDEX));
+
+        let p = self.cpu_p();
+        let p = self.and_u8(p, clear_bit_mask);
+        let p = self.if_else_with_result(
+            value,
+            |mut visitor| {
+                let set_bit_mask = visitor.immediate_u8(1 << INDEX);
+                let p = visitor.or(p, set_bit_mask);
+                visitor.terminate(Some(p));
+            },
+            |visitor| {
+                visitor.terminate(Some(p));
+            },
+        );
+        self.set_cpu_p(p);
+    }
 }
 
 impl Visitor for CompilerVisitor {
@@ -89,59 +102,59 @@ impl Visitor for CompilerVisitor {
     }
 
     fn cpu_c(&mut self) -> Variable1 {
-        self.define_1(Definition1::CpuFlag(CpuFlag::C))
+        self.get_cpu_flag::<0>()
     }
 
     fn set_cpu_c(&mut self, value: Variable1) {
-        self.store_1(Destination1::CpuFlag(CpuFlag::C), value);
+        self.set_cpu_flag::<0>(value);
     }
 
     fn cpu_z(&mut self) -> Variable1 {
-        self.define_1(Definition1::CpuFlag(CpuFlag::Z))
+        self.get_cpu_flag::<1>()
     }
 
     fn set_cpu_z(&mut self, value: Variable1) {
-        self.store_1(Destination1::CpuFlag(CpuFlag::Z), value);
+        self.set_cpu_flag::<1>(value);
     }
 
     fn set_cpu_i(&mut self, value: Variable1) {
-        self.store_1(Destination1::CpuFlag(CpuFlag::I), value);
+        self.set_cpu_flag::<2>(value);
     }
 
     fn set_cpu_d(&mut self, value: Variable1) {
-        self.store_1(Destination1::CpuFlag(CpuFlag::D), value);
+        self.set_cpu_flag::<3>(value);
     }
 
     fn cpu_b(&mut self) -> Variable1 {
-        self.define_1(Definition1::CpuFlag(CpuFlag::B))
+        self.get_cpu_flag::<4>()
     }
 
     fn set_cpu_b(&mut self, value: Variable1) {
-        self.store_1(Destination1::CpuFlag(CpuFlag::B), value);
+        self.set_cpu_flag::<4>(value);
     }
 
     fn cpu_unused_flag(&mut self) -> Variable1 {
-        self.define_1(Definition1::CpuFlag(CpuFlag::Unused))
+        self.get_cpu_flag::<5>()
     }
 
     fn set_cpu_unused_flag(&mut self, value: Variable1) {
-        self.store_1(Destination1::CpuFlag(CpuFlag::Unused), value);
+        self.set_cpu_flag::<5>(value);
     }
 
     fn cpu_v(&mut self) -> Variable1 {
-        self.define_1(Definition1::CpuFlag(CpuFlag::V))
+        self.get_cpu_flag::<6>()
     }
 
     fn set_cpu_v(&mut self, value: Variable1) {
-        self.store_1(Destination1::CpuFlag(CpuFlag::V), value);
+        self.set_cpu_flag::<6>(value);
     }
 
     fn cpu_n(&mut self) -> Variable1 {
-        self.define_1(Definition1::CpuFlag(CpuFlag::N))
+        self.get_cpu_flag::<7>()
     }
 
     fn set_cpu_n(&mut self, value: Variable1) {
-        self.store_1(Destination1::CpuFlag(CpuFlag::N), value);
+        self.set_cpu_flag::<7>(value);
     }
 
     fn cpu_a(&mut self) -> Variable8 {

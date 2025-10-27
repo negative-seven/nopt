@@ -193,18 +193,6 @@ impl Compiler {
                     definition,
                 } => {
                     let value = match definition {
-                        ir::Definition1::CpuFlag(cpu_flag) => {
-                            let value = function_builder.ins().load(
-                                type_u8,
-                                MemFlags::new(),
-                                nes_cpu_p_address,
-                                0,
-                            );
-                            let value = function_builder
-                                .ins()
-                                .ushr_imm(value, i64::from(cpu_flag.index()));
-                            function_builder.ins().band_imm(value, 0b1)
-                        }
                         ir::Definition1::Not(variable) => {
                             function_builder.ins().bxor_imm(self.value_1(*variable), 1)
                         }
@@ -516,27 +504,6 @@ impl Compiler {
                     debug_assert_eq!(function_builder.func.dfg.value_type(value), type_u16);
                     self.variable_16_mapping.insert(variable.id, value);
                 }
-                ir::Instruction::Store1 {
-                    destination,
-                    variable,
-                } => match destination {
-                    ir::Destination1::CpuFlag(cpu_flag) => {
-                        let flag = function_builder
-                            .ins()
-                            .ishl_imm(self.value_1(*variable), i64::from(cpu_flag.index()));
-                        let p = function_builder.ins().load(
-                            type_u8,
-                            MemFlags::new(),
-                            nes_cpu_p_address,
-                            0,
-                        );
-                        let p = function_builder.ins().band_imm(p, !(1 << cpu_flag.index()));
-                        let p = function_builder.ins().bor(p, flag);
-                        function_builder
-                            .ins()
-                            .store(MemFlags::new(), p, nes_cpu_p_address, 0);
-                    }
-                },
                 ir::Instruction::Store8 {
                     destination,
                     variable,

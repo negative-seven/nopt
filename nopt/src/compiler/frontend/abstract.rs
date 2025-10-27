@@ -2,7 +2,7 @@ mod cpu_memory;
 mod ppu;
 mod visitor;
 
-use crate::{compiler::ir::CpuFlag, nes_assembly};
+use crate::nes_assembly;
 use tracing::warn;
 pub(crate) use visitor::Visitor;
 
@@ -344,9 +344,7 @@ impl<Visitor: super::Visitor> Compiler<Visitor> {
                 self.push_u8(value);
             }
             nes_assembly::Mnemonic::Php => {
-                let set_flags_mask = self
-                    .visitor
-                    .immediate_u8((1 << CpuFlag::Unused.index()) | (1 << CpuFlag::B.index()));
+                let set_flags_mask = self.visitor.immediate_u8((1 << 5) | (1 << 4));
 
                 let value = self.visitor.cpu_p();
                 let value = self.visitor.or(value, set_flags_mask);

@@ -77,10 +77,6 @@ pub(super) enum Instruction {
         variable: Variable16,
         definition: Definition16,
     },
-    Store1 {
-        destination: Destination1,
-        variable: Variable1,
-    },
     Store8 {
         destination: Destination8,
         variable: Variable8,
@@ -106,10 +102,6 @@ impl Debug for Instruction {
                 variable,
                 definition,
             } => write!(f, "{variable:?} = {definition:?}"),
-            Self::Store1 {
-                destination,
-                variable,
-            } => write!(f, "{destination:?} = {variable:?}"),
             Self::Store8 {
                 destination,
                 variable,
@@ -154,48 +146,6 @@ impl Debug for Jump {
     }
 }
 
-#[derive(Clone)]
-pub(super) enum CpuFlag {
-    C,
-    Z,
-    I,
-    D,
-    B,
-    Unused,
-    V,
-    N,
-}
-
-impl CpuFlag {
-    pub(super) fn index(&self) -> u8 {
-        match self {
-            CpuFlag::C => 0,
-            CpuFlag::Z => 1,
-            CpuFlag::I => 2,
-            CpuFlag::D => 3,
-            CpuFlag::B => 4,
-            CpuFlag::Unused => 5,
-            CpuFlag::V => 6,
-            CpuFlag::N => 7,
-        }
-    }
-}
-
-impl Debug for CpuFlag {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::C => write!(f, "c"),
-            Self::Z => write!(f, "z"),
-            Self::I => write!(f, "i"),
-            Self::D => write!(f, "d"),
-            Self::B => write!(f, "b"),
-            Self::Unused => write!(f, "unused_flag"),
-            Self::V => write!(f, "v"),
-            Self::N => write!(f, "n"),
-        }
-    }
-}
-
 #[derive(Clone, Copy)]
 pub(crate) struct Variable1 {
     pub id: usize,
@@ -208,7 +158,6 @@ impl Debug for Variable1 {
 }
 
 pub(crate) enum Definition1 {
-    CpuFlag(CpuFlag),
     Not(Variable1),
     And(Variable1, Variable1),
     EqualToZero(Variable8),
@@ -242,7 +191,6 @@ pub(crate) enum Definition1 {
 impl Debug for Definition1 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::CpuFlag(flag) => write!(f, "{flag:?}"),
             Self::Not(register_u1) => write!(f, "!{register_u1:?}"),
             Self::And(operand_0, operand_1) => write!(f, "({operand_0:?} & {operand_1:?})"),
             Self::EqualToZero(u8) => write!(f, "({u8:?} == 0)"),
@@ -282,19 +230,6 @@ impl Debug for Definition1 {
                 f,
                 "({operand_0:?} - {operand_1:?} - {operand_borrow:?}).overflow"
             ),
-        }
-    }
-}
-
-#[derive(Clone)]
-pub(super) enum Destination1 {
-    CpuFlag(CpuFlag),
-}
-
-impl Debug for Destination1 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::CpuFlag(flag) => write!(f, "{flag:?}"),
         }
     }
 }
