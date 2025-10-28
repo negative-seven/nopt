@@ -25,7 +25,7 @@ impl Compiler {
         let (ir, is_prg_rom_only) = frontend::compile_instruction(nes, nes.cpu.pc);
         Self::trace_ir_function(&ir);
 
-        let bytes = cranelift_backend::compile(&ir, nes, self.optimize);
+        let bytes = cranelift_backend::compile(&ir, self.optimize);
 
         let mut decoder = iced_x86::Decoder::new(64, &bytes, iced_x86::DecoderOptions::NONE);
         decoder.set_ip(bytes.as_ptr() as u64);

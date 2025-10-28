@@ -1,7 +1,4 @@
-use crate::{
-    Nes,
-    compiler::ir::{self, Destination16},
-};
+use crate::compiler::ir::{self, Destination16};
 use cranelift_codegen::{
     Context,
     control::ControlPlane,
@@ -19,8 +16,8 @@ use std::{
 };
 use target_lexicon::Triple;
 
-pub(super) fn compile(ir: &ir::Function, nes: *mut Nes, optimize: bool) -> Mmap {
-    Compiler::new(optimize, nes).compile(ir)
+pub(super) fn compile(ir: &ir::Function, optimize: bool) -> Mmap {
+    Compiler::new(optimize).compile(ir)
 }
 
 struct PtrComparedRc<T>(Rc<T>);
@@ -41,7 +38,6 @@ impl<T> std::hash::Hash for PtrComparedRc<T> {
 
 struct Compiler {
     isa: Arc<dyn TargetIsa>,
-    nes: *mut Nes,
     variable_1_mapping: HashMap<usize, Value>,
     variable_8_mapping: HashMap<usize, Value>,
     variable_16_mapping: HashMap<usize, Value>,
@@ -49,7 +45,7 @@ struct Compiler {
 }
 
 impl Compiler {
-    pub(crate) fn new(optimize: bool, nes: *mut Nes) -> Self {
+    pub(crate) fn new(optimize: bool) -> Self {
         let mut flags_builder = settings::builder();
         flags_builder
             .set("opt_level", if optimize { "speed" } else { "none" })
@@ -62,7 +58,6 @@ impl Compiler {
 
         Self {
             isa,
-            nes,
             variable_1_mapping: HashMap::new(),
             variable_8_mapping: HashMap::new(),
             variable_16_mapping: HashMap::new(),
@@ -114,77 +109,6 @@ impl Compiler {
         };
 
         function_builder.switch_to_block(block);
-
-        let nes_cpu_ram_address = function_builder
-            .ins()
-            .iconst(self.isa.pointer_type(), unsafe {
-                (*self.nes).cpu.ram.as_ptr() as i64
-            });
-        let nes_ppu_ram_address = function_builder
-            .ins()
-            .iconst(self.isa.pointer_type(), unsafe {
-                (*self.nes).ppu.ram.as_ptr() as i64
-            });
-        let nes_ppu_palette_ram_address = function_builder
-            .ins()
-            .iconst(self.isa.pointer_type(), unsafe {
-                (*self.nes).ppu.palette_ram.as_ptr() as i64
-            });
-        let nes_prg_ram_address = function_builder
-            .ins()
-            .iconst(self.isa.pointer_type(), unsafe {
-                (*self.nes).prg_ram.as_ptr() as i64
-            });
-        let nes_cpu_prg_rom_address = function_builder
-            .ins()
-            .iconst(self.isa.pointer_type(), unsafe {
-                (*self.nes).rom.prg_rom().as_ptr() as i64
-            });
-        let nes_cpu_a_address = function_builder
-            .ins()
-            .iconst(self.isa.pointer_type(), unsafe {
-                &raw mut (*self.nes).cpu.a as i64
-            });
-        let nes_cpu_x_address = function_builder
-            .ins()
-            .iconst(self.isa.pointer_type(), unsafe {
-                &raw mut (*self.nes).cpu.x as i64
-            });
-        let nes_cpu_y_address = function_builder
-            .ins()
-            .iconst(self.isa.pointer_type(), unsafe {
-                &raw mut (*self.nes).cpu.y as i64
-            });
-        let nes_cpu_s_address = function_builder
-            .ins()
-            .iconst(self.isa.pointer_type(), unsafe {
-                &raw mut (*self.nes).cpu.s as i64
-            });
-        let nes_cpu_p_address = function_builder
-            .ins()
-            .iconst(self.isa.pointer_type(), unsafe {
-                &raw mut (*self.nes).cpu.p as i64
-            });
-        let nes_cpu_pc_address = function_builder
-            .ins()
-            .iconst(self.isa.pointer_type(), unsafe {
-                &raw mut (*self.nes).cpu.pc as i64
-            });
-        let nes_ppu_control_register_address = function_builder
-            .ins()
-            .iconst(self.isa.pointer_type(), unsafe {
-                &raw mut (*self.nes).ppu.control_register as i64
-            });
-        let nes_ppu_read_buffer_address = function_builder
-            .ins()
-            .iconst(self.isa.pointer_type(), unsafe {
-                &raw mut (*self.nes).ppu.read_buffer as i64
-            });
-        let nes_ppu_current_address_address = function_builder
-            .ins()
-            .iconst(self.isa.pointer_type(), unsafe {
-                &raw mut (*self.nes).ppu.current_address as i64
-            });
 
         for instruction in &ir.borrow().instructions {
             match instruction {
@@ -300,93 +224,25 @@ impl Compiler {
                 } => {
                     let value = match definition {
                         ir::Definition8::BasicBlockArgument => argument.unwrap(),
-                        ir::Definition8::PpuControlRegister => function_builder.ins().load(
-                            type_u8,
-                            MemFlags::new(),
-                            nes_ppu_control_register_address,
-                            0,
-                        ),
-                        ir::Definition8::PpuReadBuffer => function_builder.ins().load(
-                            type_u8,
-                            MemFlags::new(),
-                            nes_ppu_read_buffer_address,
-                            0,
-                        ),
+                        ir::Definition8::NativeMemory { address, offset } => {
+                            let address = function_builder
+                                .ins()
+                                .iconst(self.isa.pointer_type(), *address as i64);
+                            let offset = function_builder
+                                .ins()
+                                .uextend(self.isa.pointer_type(), self.value_16(*offset));
+                            let address_plus_offset =
+                                function_builder.ins().uadd_overflow(address, offset).0;
+                            function_builder.ins().load(
+                                type_u8,
+                                MemFlags::new(),
+                                address_plus_offset,
+                                0,
+                            )
+                        }
                         ir::Definition8::Immediate(immediate) => function_builder
                             .ins()
                             .iconst(type_u8, i64::from(*immediate)),
-                        ir::Definition8::CpuRegister(cpu_register) => {
-                            let address = match cpu_register {
-                                ir::CpuRegister::A => nes_cpu_a_address,
-                                ir::CpuRegister::X => nes_cpu_x_address,
-                                ir::CpuRegister::Y => nes_cpu_y_address,
-                                ir::CpuRegister::S => nes_cpu_s_address,
-                                ir::CpuRegister::P => nes_cpu_p_address,
-                            };
-                            function_builder
-                                .ins()
-                                .load(type_u8, MemFlags::new(), address, 0)
-                        }
-                        ir::Definition8::CpuRam(variable) => {
-                            let index = function_builder
-                                .ins()
-                                .uextend(self.isa.pointer_type(), self.value_16(*variable));
-                            let address = function_builder
-                                .ins()
-                                .uadd_overflow(nes_cpu_ram_address, index)
-                                .0;
-                            function_builder
-                                .ins()
-                                .load(type_u8, MemFlags::new(), address, 0)
-                        }
-                        ir::Definition8::PpuRam(variable) => {
-                            let index = function_builder
-                                .ins()
-                                .uextend(self.isa.pointer_type(), self.value_16(*variable));
-                            let address = function_builder
-                                .ins()
-                                .uadd_overflow(nes_ppu_ram_address, index)
-                                .0;
-                            function_builder
-                                .ins()
-                                .load(type_u8, MemFlags::new(), address, 0)
-                        }
-                        ir::Definition8::PpuPaletteRam(variable) => {
-                            let index = function_builder
-                                .ins()
-                                .uextend(self.isa.pointer_type(), self.value_16(*variable));
-                            let address = function_builder
-                                .ins()
-                                .uadd_overflow(nes_ppu_palette_ram_address, index)
-                                .0;
-                            function_builder
-                                .ins()
-                                .load(type_u8, MemFlags::new(), address, 0)
-                        }
-                        ir::Definition8::PrgRam(variable) => {
-                            let index = function_builder
-                                .ins()
-                                .uextend(self.isa.pointer_type(), self.value_16(*variable));
-                            let address = function_builder
-                                .ins()
-                                .uadd_overflow(nes_prg_ram_address, index)
-                                .0;
-                            function_builder
-                                .ins()
-                                .load(type_u8, MemFlags::new(), address, 0)
-                        }
-                        ir::Definition8::Rom(variable) => {
-                            let index = function_builder
-                                .ins()
-                                .uextend(self.isa.pointer_type(), self.value_16(*variable));
-                            let address = function_builder
-                                .ins()
-                                .uadd_overflow(nes_cpu_prg_rom_address, index)
-                                .0;
-                            function_builder
-                                .ins()
-                                .load(type_u8, MemFlags::new(), address, 0)
-                        }
                         ir::Definition8::LowByte(variable) => function_builder
                             .ins()
                             .ireduce(type_u8, self.value_16(*variable)),
@@ -464,18 +320,14 @@ impl Compiler {
                     definition,
                 } => {
                     let value = match definition {
-                        ir::Definition16::Pc => function_builder.ins().load(
-                            type_u16,
-                            MemFlags::new(),
-                            nes_cpu_pc_address,
-                            0,
-                        ),
-                        ir::Definition16::PpuCurrentAddress => function_builder.ins().load(
-                            type_u16,
-                            MemFlags::new(),
-                            nes_ppu_current_address_address,
-                            0,
-                        ),
+                        ir::Definition16::NativeMemory { address } => {
+                            let address = function_builder
+                                .ins()
+                                .iconst(self.isa.pointer_type(), *address as i64);
+                            function_builder
+                                .ins()
+                                .load(type_u16, MemFlags::new(), address, 0)
+                        }
                         ir::Definition16::FromU8s { high, low } => {
                             let high = function_builder
                                 .ins()
@@ -498,99 +350,31 @@ impl Compiler {
                     self.variable_16_mapping.insert(variable.id, value);
                 }
                 ir::Instruction::Store8 {
-                    destination,
-                    variable,
-                } => match destination {
-                    ir::Destination8::PpuControlRegister => {
-                        function_builder.ins().store(
-                            MemFlags::new(),
-                            self.value_8(*variable),
-                            nes_ppu_control_register_address,
-                            0,
-                        );
-                    }
-                    ir::Destination8::PpuReadBuffer => {
-                        function_builder.ins().store(
-                            MemFlags::new(),
-                            self.value_8(*variable),
-                            nes_ppu_read_buffer_address,
-                            0,
-                        );
-                    }
-                    ir::Destination8::CpuRegister(cpu_register) => {
-                        let address = match cpu_register {
-                            ir::CpuRegister::A => nes_cpu_a_address,
-                            ir::CpuRegister::X => nes_cpu_x_address,
-                            ir::CpuRegister::Y => nes_cpu_y_address,
-                            ir::CpuRegister::S => nes_cpu_s_address,
-                            ir::CpuRegister::P => nes_cpu_p_address,
-                        };
-                        function_builder.ins().store(
-                            MemFlags::new(),
-                            self.value_8(*variable),
-                            address,
-                            0,
-                        );
-                    }
-                    ir::Destination8::CpuRam(address) => {
-                        let index = function_builder
-                            .ins()
-                            .uextend(self.isa.pointer_type(), self.value_16(*address));
-                        let address = function_builder.ins().iadd(nes_cpu_ram_address, index);
-                        function_builder.ins().store(
-                            MemFlags::new(),
-                            self.value_8(*variable),
-                            address,
-                            0,
-                        );
-                    }
-                    ir::Destination8::PpuRam(address) => {
-                        let index = function_builder
-                            .ins()
-                            .uextend(self.isa.pointer_type(), self.value_16(*address));
-                        let address = function_builder.ins().iadd(nes_ppu_ram_address, index);
-                        function_builder.ins().store(
-                            MemFlags::new(),
-                            self.value_8(*variable),
-                            address,
-                            0,
-                        );
-                    }
-                    ir::Destination8::PpuPaletteRam(address) => {
-                        let index = function_builder
-                            .ins()
-                            .uextend(self.isa.pointer_type(), self.value_16(*address));
-                        let address = function_builder
-                            .ins()
-                            .iadd(nes_ppu_palette_ram_address, index);
-                        function_builder.ins().store(
-                            MemFlags::new(),
-                            self.value_8(*variable),
-                            address,
-                            0,
-                        );
-                    }
-                    ir::Destination8::PrgRam(address) => {
-                        let index = function_builder
-                            .ins()
-                            .uextend(self.isa.pointer_type(), self.value_16(*address));
-                        let address = function_builder.ins().iadd(nes_prg_ram_address, index);
-                        function_builder.ins().store(
-                            MemFlags::new(),
-                            self.value_8(*variable),
-                            address,
-                            0,
-                        );
-                    }
-                },
-                ir::Instruction::Store16 {
-                    destination,
+                    destination: ir::Destination8::NativeMemory { address, offset },
                     variable,
                 } => {
-                    let address = match destination {
-                        Destination16::CpuPc => nes_cpu_pc_address,
-                        Destination16::PpuCurrentAddress => nes_ppu_current_address_address,
-                    };
+                    let address = function_builder
+                        .ins()
+                        .iconst(self.isa.pointer_type(), *address as i64);
+                    let offset = function_builder
+                        .ins()
+                        .uextend(self.isa.pointer_type(), self.value_16(*offset));
+                    let address_plus_offset =
+                        function_builder.ins().uadd_overflow(address, offset).0;
+                    function_builder.ins().store(
+                        MemFlags::new(),
+                        self.value_8(*variable),
+                        address_plus_offset,
+                        0,
+                    );
+                }
+                ir::Instruction::Store16 {
+                    destination: Destination16::NativeMemory { address },
+                    variable,
+                } => {
+                    let address = function_builder
+                        .ins()
+                        .iconst(self.isa.pointer_type(), *address as i64);
                     function_builder.ins().store(
                         MemFlags::new(),
                         self.value_16(*variable),

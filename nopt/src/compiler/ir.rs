@@ -245,39 +245,14 @@ impl Debug for Variable8 {
     }
 }
 
-#[derive(Clone, Copy)]
-pub(super) enum CpuRegister {
-    A,
-    X,
-    Y,
-    S,
-    P,
-}
-
-impl Debug for CpuRegister {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::A => write!(f, "a"),
-            Self::X => write!(f, "x"),
-            Self::Y => write!(f, "y"),
-            Self::S => write!(f, "s"),
-            Self::P => write!(f, "p"),
-        }
-    }
-}
-
 #[derive(Clone)]
 pub(crate) enum Definition8 {
     BasicBlockArgument,
-    PpuControlRegister,
-    PpuReadBuffer,
+    NativeMemory {
+        address: *const u8,
+        offset: Variable16,
+    },
     Immediate(u8),
-    CpuRegister(CpuRegister),
-    CpuRam(Variable16),
-    PpuRam(Variable16),
-    PpuPaletteRam(Variable16),
-    PrgRam(Variable16),
-    Rom(Variable16),
     LowByte(Variable16),
     HighByte(Variable16),
     Or(Variable8, Variable8),
@@ -307,15 +282,10 @@ impl Debug for Definition8 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::BasicBlockArgument => write!(f, "arg"),
-            Self::PpuControlRegister => write!(f, "ppu_control_register"),
-            Self::PpuReadBuffer => write!(f, "ppu_read_buffer"),
+            Self::NativeMemory { address, offset } => {
+                write!(f, "{address:?}[{offset:?}]")
+            }
             Self::Immediate(immediate) => write!(f, "0x{immediate:02x}"),
-            Self::CpuRegister(cpu_register) => write!(f, "{cpu_register:?}"),
-            Self::CpuRam(variable) => write!(f, "cpu_ram[{variable:?}]"),
-            Self::PpuRam(variable) => write!(f, "ppu_ram[{variable:?}]"),
-            Self::PpuPaletteRam(variable) => write!(f, "ppu_palette_ram[{variable:?}]"),
-            Self::PrgRam(variable) => write!(f, "prg_ram[{variable:?}]"),
-            Self::Rom(variable) => write!(f, "rom[{variable:?}]"),
             Self::LowByte(variable) => write!(f, "<{variable:?}"),
             Self::HighByte(variable) => write!(f, ">{variable:?}"),
             Self::Or(u8_0, u8_1) => write!(f, "({u8_0:?} | {u8_1:?}"),
@@ -345,25 +315,16 @@ impl Debug for Definition8 {
 
 #[derive(Clone)]
 pub(super) enum Destination8 {
-    PpuControlRegister,
-    PpuReadBuffer,
-    CpuRegister(CpuRegister),
-    CpuRam(Variable16),
-    PpuRam(Variable16),
-    PpuPaletteRam(Variable16),
-    PrgRam(Variable16),
+    NativeMemory {
+        address: *mut u8,
+        offset: Variable16,
+    },
 }
 
 impl Debug for Destination8 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::PpuControlRegister => write!(f, "ppu_control_register"),
-            Self::PpuReadBuffer => write!(f, "ppu_read_buffer"),
-            Self::CpuRegister(u8) => write!(f, "{u8:?}"),
-            Self::CpuRam(variable) => write!(f, "cpu_ram[{variable:?}]"),
-            Self::PpuRam(variable) => write!(f, "ppu_ram[{variable:?}]"),
-            Self::PpuPaletteRam(variable) => write!(f, "ppu_palette_ram[{variable:?}]"),
-            Self::PrgRam(variable) => write!(f, "prg_ram[{variable:?}]"),
+            Self::NativeMemory { address, offset } => write!(f, "{address:?}[{offset:?}"),
         }
     }
 }
@@ -381,8 +342,9 @@ impl Debug for Variable16 {
 
 #[derive(Clone)]
 pub(crate) enum Definition16 {
-    Pc,
-    PpuCurrentAddress,
+    NativeMemory {
+        address: *const u16,
+    },
     FromU8s {
         high: Variable8,
         low: Variable8,
@@ -397,8 +359,7 @@ pub(crate) enum Definition16 {
 impl Debug for Definition16 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Pc => write!(f, "pc"),
-            Self::PpuCurrentAddress => write!(f, "ppu_current_address"),
+            Self::NativeMemory { address } => write!(f, "{address:?}[0]"),
             Self::FromU8s { low, high } => write!(f, "({high:?} % {low:?})"),
             Self::Select {
                 condition,
@@ -414,15 +375,13 @@ impl Debug for Definition16 {
 
 #[derive(Clone)]
 pub(super) enum Destination16 {
-    CpuPc,
-    PpuCurrentAddress,
+    NativeMemory { address: *mut u16 },
 }
 
 impl Debug for Destination16 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::CpuPc => write!(f, "cpu_pc"),
-            Self::PpuCurrentAddress => write!(f, "ppu_current_address"),
+            Self::NativeMemory { address } => write!(f, "{address:?}[0]"),
         }
     }
 }
