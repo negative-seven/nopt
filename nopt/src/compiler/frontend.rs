@@ -1,15 +1,12 @@
-mod r#abstract;
 mod instruction_decoder;
+pub(crate) mod nes;
 
-use crate::{
-    compiler::{
-        frontend::r#abstract::{Compiler, Visitor},
-        ir::{
-            BasicBlock, Definition1, Definition8, Definition16, Destination8, Destination16,
-            Function, Instruction, Jump, Variable1, Variable8, Variable16,
-        },
+use crate::compiler::{
+    frontend::nes::{Compiler, Nes, Visitor},
+    ir::{
+        BasicBlock, Definition1, Definition8, Definition16, Destination8, Destination16, Function,
+        Instruction, Jump, Variable1, Variable8, Variable16,
     },
-    nes::Nes,
 };
 use std::{cell::RefCell, rc::Rc, sync::atomic::AtomicUsize};
 

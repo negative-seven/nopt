@@ -1,9 +1,8 @@
 mod compiler;
-mod nes;
 mod nes_assembly;
 mod rom;
 
-use crate::{compiler::Compiler, nes::Nes};
+use crate::compiler::{Compiler, frontend::nes::Nes};
 pub use rom::Rom;
 use std::mem::ManuallyDrop;
 use tracing::trace;

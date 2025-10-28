@@ -1,6 +1,5 @@
+use crate::compiler::frontend::nes::ppu;
 use std::ops::RangeInclusive;
-
-use crate::compiler::frontend::r#abstract::ppu;
 
 pub(super) fn read<Visitor: super::Visitor>(
     visitor: &mut Visitor,

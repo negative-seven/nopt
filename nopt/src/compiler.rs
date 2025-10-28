@@ -1,8 +1,8 @@
 mod cranelift_backend;
-mod frontend;
+pub(crate) mod frontend;
 mod ir;
 
-use crate::nes::Nes;
+use crate::compiler::frontend::nes::Nes;
 use iced_x86::Formatter as _;
 use memmap2::Mmap;
 use std::{

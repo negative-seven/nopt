@@ -1,5 +1,31 @@
 use std::ops::RangeInclusive;
 
+pub struct Ppu {
+    pub ram: [u8; 0x1000],
+    pub palette_ram: [u8; 0x20],
+    pub control_register: u8,
+    pub read_buffer: u8,
+    pub current_address: u16,
+}
+
+impl Ppu {
+    pub fn new() -> Self {
+        Self {
+            ram: [0; 0x1000],
+            palette_ram: [0; 0x20],
+            control_register: 0,
+            read_buffer: 0,
+            current_address: 0,
+        }
+    }
+}
+
+impl Default for Ppu {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub(super) fn write_ppuaddr<Visitor: super::Visitor>(visitor: &mut Visitor, value: Visitor::U8) {
     let old_address = visitor.ppu_current_address();
     let new_address_high = visitor.low_byte(old_address);
