@@ -328,10 +328,9 @@ impl Compiler {
                                 .load(type_u8, MemFlags::new(), address, 0)
                         }
                         ir::Definition8::CpuRam(variable) => {
-                            let cpu_address = function_builder
+                            let index = function_builder
                                 .ins()
                                 .uextend(self.isa.pointer_type(), self.value_16(*variable));
-                            let index = function_builder.ins().band_imm(cpu_address, 0x7ff);
                             let address = function_builder
                                 .ins()
                                 .uadd_overflow(nes_cpu_ram_address, index)
@@ -341,10 +340,9 @@ impl Compiler {
                                 .load(type_u8, MemFlags::new(), address, 0)
                         }
                         ir::Definition8::PpuRam(variable) => {
-                            let ppu_address = function_builder
+                            let index = function_builder
                                 .ins()
                                 .uextend(self.isa.pointer_type(), self.value_16(*variable));
-                            let index = function_builder.ins().band_imm(ppu_address, 0x1fff);
                             let address = function_builder
                                 .ins()
                                 .uadd_overflow(nes_ppu_ram_address, index)
@@ -354,10 +352,9 @@ impl Compiler {
                                 .load(type_u8, MemFlags::new(), address, 0)
                         }
                         ir::Definition8::PpuPaletteRam(variable) => {
-                            let ppu_address = function_builder
+                            let index = function_builder
                                 .ins()
                                 .uextend(self.isa.pointer_type(), self.value_16(*variable));
-                            let index = function_builder.ins().band_imm(ppu_address, 0x1f);
                             let address = function_builder
                                 .ins()
                                 .uadd_overflow(nes_ppu_palette_ram_address, index)
@@ -367,10 +364,9 @@ impl Compiler {
                                 .load(type_u8, MemFlags::new(), address, 0)
                         }
                         ir::Definition8::PrgRam(variable) => {
-                            let cpu_address = function_builder
+                            let index = function_builder
                                 .ins()
                                 .uextend(self.isa.pointer_type(), self.value_16(*variable));
-                            let index = function_builder.ins().band_imm(cpu_address, 0x1fff);
                             let address = function_builder
                                 .ins()
                                 .uadd_overflow(nes_prg_ram_address, index)
@@ -380,12 +376,9 @@ impl Compiler {
                                 .load(type_u8, MemFlags::new(), address, 0)
                         }
                         ir::Definition8::Rom(variable) => {
-                            let cpu_address = function_builder
+                            let index = function_builder
                                 .ins()
                                 .uextend(self.isa.pointer_type(), self.value_16(*variable));
-                            let index = function_builder.ins().band_imm(cpu_address, unsafe {
-                                i64::try_from((*self.nes).rom.prg_rom().len() - 1).unwrap()
-                            });
                             let address = function_builder
                                 .ins()
                                 .uadd_overflow(nes_cpu_prg_rom_address, index)
@@ -540,10 +533,9 @@ impl Compiler {
                         );
                     }
                     ir::Destination8::CpuRam(address) => {
-                        let address = function_builder
+                        let index = function_builder
                             .ins()
                             .uextend(self.isa.pointer_type(), self.value_16(*address));
-                        let index = function_builder.ins().band_imm(address, 0x7ff);
                         let address = function_builder.ins().iadd(nes_cpu_ram_address, index);
                         function_builder.ins().store(
                             MemFlags::new(),
@@ -553,10 +545,9 @@ impl Compiler {
                         );
                     }
                     ir::Destination8::PpuRam(address) => {
-                        let address = function_builder
+                        let index = function_builder
                             .ins()
                             .uextend(self.isa.pointer_type(), self.value_16(*address));
-                        let index = function_builder.ins().band_imm(address, 0x1fff);
                         let address = function_builder.ins().iadd(nes_ppu_ram_address, index);
                         function_builder.ins().store(
                             MemFlags::new(),
@@ -566,10 +557,9 @@ impl Compiler {
                         );
                     }
                     ir::Destination8::PpuPaletteRam(address) => {
-                        let address = function_builder
+                        let index = function_builder
                             .ins()
                             .uextend(self.isa.pointer_type(), self.value_16(*address));
-                        let index = function_builder.ins().band_imm(address, 0x1f);
                         let address = function_builder
                             .ins()
                             .iadd(nes_ppu_palette_ram_address, index);
@@ -581,10 +571,9 @@ impl Compiler {
                         );
                     }
                     ir::Destination8::PrgRam(address) => {
-                        let address = function_builder
+                        let index = function_builder
                             .ins()
                             .uextend(self.isa.pointer_type(), self.value_16(*address));
-                        let index = function_builder.ins().band_imm(address, 0x1fff);
                         let address = function_builder.ins().iadd(nes_prg_ram_address, index);
                         function_builder.ins().store(
                             MemFlags::new(),

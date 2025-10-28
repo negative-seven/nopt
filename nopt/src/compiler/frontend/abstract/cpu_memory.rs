@@ -55,6 +55,8 @@ pub(super) fn read<Visitor: super::Visitor>(
         visitor,
         0x6000..=0x7fff,
         |mut visitor, address| {
+            let address_mask = visitor.immediate_u16(0x1fff);
+            let address = visitor.and_u16(address, address_mask);
             let value = visitor.prg_ram(address);
             visitor.terminate(Some(value));
         },
@@ -64,6 +66,8 @@ pub(super) fn read<Visitor: super::Visitor>(
         visitor,
         0x8000..=0xffff,
         |mut visitor, address| {
+            let address_mask = visitor.immediate_u16(0x7fff);
+            let address = visitor.and_u16(address, address_mask);
             let value = visitor.rom(address);
             visitor.terminate(Some(value));
         },
@@ -112,6 +116,8 @@ pub(super) fn write<Visitor: super::Visitor>(
         visitor.terminate(None);
     });
     if_address_in_range(0x6000..=0x7fff, |mut visitor, address, value| {
+        let address_mask = visitor.immediate_u16(0x1fff);
+        let address = visitor.and_u16(address, address_mask);
         visitor.set_prg_ram(address, value);
         visitor.terminate(None);
     });
