@@ -2,10 +2,10 @@ mod instruction_decoder;
 pub(crate) mod nes;
 
 use crate::compiler::{
-    frontend::nes::{Nes, Visitor},
+    frontend::nes::{Cpu, Nes, Visitor},
     ir::{
-        BasicBlock, Definition1, Definition8, Definition16, Destination8, Destination16, Function,
-        Instruction, Jump, Variable1, Variable8, Variable16,
+        BasicBlock, Definition1, Definition8, Definition16, Destination8, Function, Instruction,
+        Jump, Variable1, Variable8, Variable16,
     },
 };
 use std::{cell::RefCell, rc::Rc, sync::atomic::AtomicUsize};
@@ -14,10 +14,9 @@ pub(super) fn compile_instruction(nes: &mut Nes, address: u16) -> (Function, boo
     let (cpu_instruction, is_prg_rom_only) = instruction_decoder::decode_instruction(nes, address);
 
     let basic_block = Rc::new(RefCell::new(BasicBlock::new(Rc::new(AtomicUsize::new(0)))));
-    let nes_pointer = nes as *mut _;
-    nes.cpu.compile(
+    Cpu::compile(
+        nes,
         CompilerVisitor {
-            nes: nes_pointer,
             current_block: Rc::clone(&basic_block),
             exit_block: None,
         },
@@ -28,7 +27,6 @@ pub(super) fn compile_instruction(nes: &mut Nes, address: u16) -> (Function, boo
 }
 
 pub(crate) struct CompilerVisitor {
-    nes: *mut Nes,
     current_block: Rc<RefCell<BasicBlock>>,
     exit_block: Option<Rc<RefCell<BasicBlock>>>,
 }
@@ -55,16 +53,6 @@ impl CompilerVisitor {
                 variable: value,
             });
     }
-
-    fn store_16(&mut self, destination: Destination16, value: Variable16) {
-        self.current_block
-            .borrow_mut()
-            .instructions
-            .push(Instruction::Store16 {
-                destination,
-                variable: value,
-            });
-    }
 }
 
 impl Visitor for CompilerVisitor {
@@ -76,153 +64,17 @@ impl Visitor for CompilerVisitor {
         self.define_8(Definition8::Immediate(value))
     }
 
-    fn cpu_a(&mut self) -> Variable8 {
-        let address = unsafe { &raw const (*self.nes).cpu.a };
-        let offset = self.immediate_u16(0);
+    fn memory_with_offset_u8(&mut self, address: *const u8, offset: Variable16) -> Variable8 {
         self.define_8(Definition8::NativeMemory { address, offset })
     }
 
-    fn set_cpu_a(&mut self, value: Variable8) {
-        let address = unsafe { &raw mut (*self.nes).cpu.a };
-        let offset = self.immediate_u16(0);
+    fn set_memory_with_offset_u8(
+        &mut self,
+        address: *mut u8,
+        offset: Variable16,
+        value: Variable8,
+    ) {
         self.store_8(Destination8::NativeMemory { address, offset }, value);
-    }
-
-    fn cpu_x(&mut self) -> Variable8 {
-        let address = unsafe { &raw const (*self.nes).cpu.x };
-        let offset = self.immediate_u16(0);
-        self.define_8(Definition8::NativeMemory { address, offset })
-    }
-
-    fn set_cpu_x(&mut self, value: Variable8) {
-        let address = unsafe { &raw mut (*self.nes).cpu.x };
-        let offset = self.immediate_u16(0);
-        self.store_8(Destination8::NativeMemory { address, offset }, value);
-    }
-
-    fn cpu_y(&mut self) -> Variable8 {
-        let address = unsafe { &raw const (*self.nes).cpu.y };
-        let offset = self.immediate_u16(0);
-        self.define_8(Definition8::NativeMemory { address, offset })
-    }
-
-    fn set_cpu_y(&mut self, value: Variable8) {
-        let address = unsafe { &raw mut (*self.nes).cpu.y };
-        let offset = self.immediate_u16(0);
-        self.store_8(Destination8::NativeMemory { address, offset }, value);
-    }
-
-    fn cpu_s(&mut self) -> Variable8 {
-        let address = unsafe { &raw const (*self.nes).cpu.s };
-        let offset = self.immediate_u16(0);
-        self.define_8(Definition8::NativeMemory { address, offset })
-    }
-
-    fn set_cpu_s(&mut self, value: Variable8) {
-        let address = unsafe { &raw mut (*self.nes).cpu.s };
-        let offset = self.immediate_u16(0);
-        self.store_8(Destination8::NativeMemory { address, offset }, value);
-    }
-
-    fn cpu_p(&mut self) -> Variable8 {
-        let address = unsafe { &raw const (*self.nes).cpu.p };
-        let offset = self.immediate_u16(0);
-        self.define_8(Definition8::NativeMemory { address, offset })
-    }
-
-    fn set_cpu_p(&mut self, value: Variable8) {
-        let address = unsafe { &raw mut (*self.nes).cpu.p };
-        let offset = self.immediate_u16(0);
-        self.store_8(Destination8::NativeMemory { address, offset }, value);
-    }
-
-    fn cpu_pc(&mut self) -> Variable16 {
-        let address = unsafe { &raw const (*self.nes).cpu.pc };
-        self.define_16(Definition16::NativeMemory { address })
-    }
-
-    fn set_cpu_pc(&mut self, value: Variable16) {
-        let address = unsafe { &raw mut (*self.nes).cpu.pc };
-        self.store_16(Destination16::NativeMemory { address }, value);
-    }
-
-    fn ppu_control_register(&mut self) -> Variable8 {
-        let address = unsafe { &raw const (*self.nes).ppu.control_register };
-        let offset = self.immediate_u16(0);
-        self.define_8(Definition8::NativeMemory { address, offset })
-    }
-
-    fn set_ppu_control_register(&mut self, value: Variable8) {
-        let address = unsafe { &raw mut (*self.nes).ppu.control_register };
-        let offset = self.immediate_u16(0);
-        self.store_8(Destination8::NativeMemory { address, offset }, value);
-    }
-
-    fn ppu_read_buffer(&mut self) -> Variable8 {
-        let address = unsafe { &raw const (*self.nes).ppu.read_buffer };
-        let offset = self.immediate_u16(0);
-        self.define_8(Definition8::NativeMemory { address, offset })
-    }
-
-    fn set_ppu_read_buffer(&mut self, value: Variable8) {
-        let address = unsafe { &raw mut (*self.nes).ppu.read_buffer };
-        let offset = self.immediate_u16(0);
-        self.store_8(Destination8::NativeMemory { address, offset }, value);
-    }
-
-    fn ppu_current_address(&mut self) -> Variable16 {
-        let address = unsafe { &raw const (*self.nes).ppu.current_address };
-        self.define_16(Definition16::NativeMemory { address })
-    }
-
-    fn set_ppu_current_address(&mut self, value: Variable16) {
-        let address = unsafe { &raw mut (*self.nes).ppu.current_address };
-        self.store_16(Destination16::NativeMemory { address }, value);
-    }
-
-    fn cpu_ram(&mut self, offset: Variable16) -> Variable8 {
-        let address = unsafe { (*self.nes).cpu.ram.as_ptr() };
-        self.define_8(Definition8::NativeMemory { address, offset })
-    }
-
-    fn set_cpu_ram(&mut self, offset: Variable16, value: Variable8) {
-        let address = unsafe { (*self.nes).cpu.ram.as_mut_ptr() };
-        self.store_8(Destination8::NativeMemory { address, offset }, value);
-    }
-
-    fn prg_ram(&mut self, offset: Variable16) -> Variable8 {
-        let address = unsafe { (*self.nes).prg_ram.as_ptr() };
-        self.define_8(Definition8::NativeMemory { address, offset })
-    }
-
-    fn set_prg_ram(&mut self, offset: Variable16, value: Variable8) {
-        let address = unsafe { (*self.nes).prg_ram.as_mut_ptr() };
-        self.store_8(Destination8::NativeMemory { address, offset }, value);
-    }
-
-    fn ppu_ram(&mut self, offset: Variable16) -> Variable8 {
-        let address = unsafe { (*self.nes).ppu.ram.as_ptr() };
-        self.define_8(Definition8::NativeMemory { address, offset })
-    }
-
-    fn set_ppu_ram(&mut self, offset: Variable16, value: Variable8) {
-        let address = unsafe { (*self.nes).ppu.ram.as_mut_ptr() };
-        self.store_8(Destination8::NativeMemory { address, offset }, value);
-    }
-
-    fn ppu_palette_ram(&mut self, offset: Variable16) -> Variable8 {
-        let address = unsafe { (*self.nes).ppu.palette_ram.as_ptr() };
-        self.define_8(Definition8::NativeMemory { address, offset })
-    }
-
-    fn set_ppu_palette_ram(&mut self, offset: Variable16, value: Variable8) {
-        let address = unsafe { (*self.nes).ppu.palette_ram.as_mut_ptr() };
-        self.store_8(Destination8::NativeMemory { address, offset }, value);
-    }
-
-    fn rom(&mut self, offset: Variable16) -> Variable8 {
-        let address = unsafe { (*self.nes).rom.prg_rom().as_ptr() };
-        self.define_8(Definition8::NativeMemory { address, offset })
     }
 
     fn get_bit(&mut self, value: Variable8, bit_index: u8) -> Variable1 {
@@ -383,8 +235,8 @@ impl Visitor for CompilerVisitor {
     fn if_else(
         &mut self,
         condition: Variable1,
-        visit_true: impl Fn(CompilerVisitor),
-        visit_false: impl Fn(CompilerVisitor),
+        mut visit_true: impl FnMut(CompilerVisitor),
+        mut visit_false: impl FnMut(CompilerVisitor),
     ) {
         let variable_id_counter = Rc::clone(&self.current_block.borrow().variable_id_counter);
 
@@ -396,7 +248,6 @@ impl Visitor for CompilerVisitor {
             &variable_id_counter,
         ))));
         visit_true(CompilerVisitor {
-            nes: self.nes,
             current_block: Rc::clone(&true_block),
             exit_block: Some(Rc::clone(&exit_block)),
         });
@@ -405,7 +256,6 @@ impl Visitor for CompilerVisitor {
             &variable_id_counter,
         ))));
         visit_false(CompilerVisitor {
-            nes: self.nes,
             current_block: Rc::clone(&false_block),
             exit_block: Some(Rc::clone(&exit_block)),
         });
@@ -424,8 +274,8 @@ impl Visitor for CompilerVisitor {
     fn if_else_with_result(
         &mut self,
         condition: Variable1,
-        visit_true: impl Fn(CompilerVisitor),
-        visit_false: impl Fn(CompilerVisitor),
+        mut visit_true: impl FnMut(CompilerVisitor),
+        mut visit_false: impl FnMut(CompilerVisitor),
     ) -> Variable8 {
         let variable_id_counter = Rc::clone(&self.current_block.borrow().variable_id_counter);
 
@@ -438,7 +288,6 @@ impl Visitor for CompilerVisitor {
             &variable_id_counter,
         ))));
         visit_true(CompilerVisitor {
-            nes: self.nes,
             current_block: Rc::clone(&true_block),
             exit_block: Some(Rc::clone(&exit_block)),
         });
@@ -447,7 +296,6 @@ impl Visitor for CompilerVisitor {
             &variable_id_counter,
         ))));
         visit_false(CompilerVisitor {
-            nes: self.nes,
             current_block: Rc::clone(&false_block),
             exit_block: Some(Rc::clone(&exit_block)),
         });

@@ -16,59 +16,34 @@ pub(crate) trait Visitor: Sized {
         self.concatenate(high, low)
     }
 
-    fn cpu_a(&mut self) -> Self::U8;
+    fn memory_u8(&mut self, address: *const u8) -> Self::U8 {
+        let n0 = self.immediate_u16(0);
+        self.memory_with_offset_u8(address, n0)
+    }
 
-    fn set_cpu_a(&mut self, value: Self::U8);
+    fn memory_with_offset_u8(&mut self, address: *const u8, offset: Self::U16) -> Self::U8;
 
-    fn cpu_x(&mut self) -> Self::U8;
+    fn memory_u16(&mut self, address: *const u16) -> Self::U16 {
+        let low = self.memory_u8(address.cast());
+        let high = self.memory_u8(unsafe { address.byte_add(1).cast() });
+        self.concatenate(high, low)
+    }
 
-    fn set_cpu_x(&mut self, value: Self::U8);
+    fn set_memory_u8(&mut self, address: *mut u8, value: Self::U8) {
+        let n0 = self.immediate_u16(0);
+        self.set_memory_with_offset_u8(address, n0, value);
+    }
 
-    fn cpu_y(&mut self) -> Self::U8;
+    fn set_memory_u16(&mut self, address: *mut u16, value: Self::U16) {
+        let address_low = address.cast();
+        let address_high = unsafe { address.byte_add(1) }.cast();
+        let value_low = self.low_byte(value);
+        let value_high = self.high_byte(value);
+        self.set_memory_u8(address_low, value_low);
+        self.set_memory_u8(address_high, value_high);
+    }
 
-    fn set_cpu_y(&mut self, value: Self::U8);
-
-    fn cpu_s(&mut self) -> Self::U8;
-
-    fn set_cpu_s(&mut self, value: Self::U8);
-
-    fn cpu_p(&mut self) -> Self::U8;
-
-    fn set_cpu_p(&mut self, value: Self::U8);
-
-    fn cpu_pc(&mut self) -> Self::U16;
-
-    fn set_cpu_pc(&mut self, value: Self::U16);
-
-    fn ppu_control_register(&mut self) -> Self::U8;
-
-    fn set_ppu_control_register(&mut self, value: Self::U8);
-
-    fn ppu_read_buffer(&mut self) -> Self::U8;
-
-    fn set_ppu_read_buffer(&mut self, value: Self::U8);
-
-    fn ppu_current_address(&mut self) -> Self::U16;
-
-    fn set_ppu_current_address(&mut self, value: Self::U16);
-
-    fn cpu_ram(&mut self, address: Self::U16) -> Self::U8;
-
-    fn set_cpu_ram(&mut self, address: Self::U16, value: Self::U8);
-
-    fn prg_ram(&mut self, address: Self::U16) -> Self::U8;
-
-    fn set_prg_ram(&mut self, address: Self::U16, value: Self::U8);
-
-    fn ppu_ram(&mut self, address: Self::U16) -> Self::U8;
-
-    fn set_ppu_ram(&mut self, address: Self::U16, value: Self::U8);
-
-    fn ppu_palette_ram(&mut self, address: Self::U16) -> Self::U8;
-
-    fn set_ppu_palette_ram(&mut self, address: Self::U16, value: Self::U8);
-
-    fn rom(&mut self, address: Self::U16) -> Self::U8;
+    fn set_memory_with_offset_u8(&mut self, address: *mut u8, offset: Self::U16, value: Self::U8);
 
     fn get_bit(&mut self, value: Self::U8, bit_index: u8) -> Self::U1;
 
@@ -190,7 +165,7 @@ pub(crate) trait Visitor: Sized {
         operand_borrow: Self::U1,
     ) -> Self::U1;
 
-    fn r#if(&mut self, condition: Self::U1, visit_true: impl Fn(Self)) {
+    fn r#if(&mut self, condition: Self::U1, visit_true: impl FnMut(Self)) {
         self.if_else(condition, visit_true, |visitor| {
             visitor.terminate(None);
         });
@@ -199,15 +174,15 @@ pub(crate) trait Visitor: Sized {
     fn if_else(
         &mut self,
         condition: Self::U1,
-        visit_true: impl Fn(Self),
-        visit_false: impl Fn(Self),
+        visit_true: impl FnMut(Self),
+        visit_false: impl FnMut(Self),
     );
 
     fn if_else_with_result(
         &mut self,
         condition: Self::U1,
-        visit_true: impl Fn(Self),
-        visit_false: impl Fn(Self),
+        visit_true: impl FnMut(Self),
+        visit_false: impl FnMut(Self),
     ) -> Self::U8;
 
     fn terminate(self, argument: Option<Self::U8>);

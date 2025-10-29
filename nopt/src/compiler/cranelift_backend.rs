@@ -1,4 +1,4 @@
-use crate::compiler::ir::{self, Destination16};
+use crate::compiler::ir;
 use cranelift_codegen::{
     Context,
     control::ControlPlane,
@@ -320,14 +320,6 @@ impl Compiler {
                     definition,
                 } => {
                     let value = match definition {
-                        ir::Definition16::NativeMemory { address } => {
-                            let address = function_builder
-                                .ins()
-                                .iconst(self.isa.pointer_type(), *address as i64);
-                            function_builder
-                                .ins()
-                                .load(type_u16, MemFlags::new(), address, 0)
-                        }
                         ir::Definition16::FromU8s { high, low } => {
                             let high = function_builder
                                 .ins()
@@ -365,20 +357,6 @@ impl Compiler {
                         MemFlags::new(),
                         self.value_8(*variable),
                         address_plus_offset,
-                        0,
-                    );
-                }
-                ir::Instruction::Store16 {
-                    destination: Destination16::NativeMemory { address },
-                    variable,
-                } => {
-                    let address = function_builder
-                        .ins()
-                        .iconst(self.isa.pointer_type(), *address as i64);
-                    function_builder.ins().store(
-                        MemFlags::new(),
-                        self.value_16(*variable),
-                        address,
                         0,
                     );
                 }

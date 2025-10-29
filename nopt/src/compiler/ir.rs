@@ -81,10 +81,6 @@ pub(super) enum Instruction {
         destination: Destination8,
         variable: Variable8,
     },
-    Store16 {
-        destination: Destination16,
-        variable: Variable16,
-    },
 }
 
 impl Debug for Instruction {
@@ -103,10 +99,6 @@ impl Debug for Instruction {
                 definition,
             } => write!(f, "{variable:?} = {definition:?}"),
             Self::Store8 {
-                destination,
-                variable,
-            } => write!(f, "{destination:?} = {variable:?}"),
-            Self::Store16 {
                 destination,
                 variable,
             } => write!(f, "{destination:?} = {variable:?}"),
@@ -342,9 +334,6 @@ impl Debug for Variable16 {
 
 #[derive(Clone)]
 pub(crate) enum Definition16 {
-    NativeMemory {
-        address: *const u16,
-    },
     FromU8s {
         high: Variable8,
         low: Variable8,
@@ -359,7 +348,6 @@ pub(crate) enum Definition16 {
 impl Debug for Definition16 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::NativeMemory { address } => write!(f, "{address:?}[0]"),
             Self::FromU8s { low, high } => write!(f, "({high:?} % {low:?})"),
             Self::Select {
                 condition,
@@ -369,19 +357,6 @@ impl Debug for Definition16 {
                 f,
                 "(if {condition:?} then {result_if_true:?} else {result_if_false:?})"
             ),
-        }
-    }
-}
-
-#[derive(Clone)]
-pub(super) enum Destination16 {
-    NativeMemory { address: *mut u16 },
-}
-
-impl Debug for Destination16 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::NativeMemory { address } => write!(f, "{address:?}[0]"),
         }
     }
 }
