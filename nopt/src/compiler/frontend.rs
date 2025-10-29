@@ -10,7 +10,10 @@ use crate::compiler::{
 };
 use std::{cell::RefCell, rc::Rc, sync::atomic::AtomicUsize};
 
-pub(super) fn compile_instruction(nes: &mut Nes, address: u16) -> (Function, bool) {
+pub(super) fn compile_instruction<Cartridge: crate::cartridge::Cartridge>(
+    nes: &mut Nes<Cartridge>,
+    address: u16,
+) -> (Function, bool) {
     let (cpu_instruction, is_prg_rom_only) = instruction_decoder::decode_instruction(nes, address);
 
     let basic_block = Rc::new(RefCell::new(BasicBlock::new(Rc::new(AtomicUsize::new(0)))));

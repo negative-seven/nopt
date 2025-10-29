@@ -21,7 +21,10 @@ impl Compiler {
         Self { optimize }
     }
 
-    pub(crate) fn compile(&self, nes: &mut Nes) -> (Mmap, bool) {
+    pub(crate) fn compile<Cartridge: crate::cartridge::Cartridge>(
+        &self,
+        nes: &mut Nes<Cartridge>,
+    ) -> (Mmap, bool) {
         let (ir, is_prg_rom_only) = frontend::compile_instruction(nes, nes.cpu.pc);
         Self::trace_ir_function(&ir);
 
@@ -84,7 +87,7 @@ impl Compiler {
 struct NesStateSymbolResolver(HashMap<u64, &'static str>);
 
 impl NesStateSymbolResolver {
-    pub(crate) fn new(nes: *mut Nes) -> Self {
+    pub(crate) fn new<Cartridge: crate::cartridge::Cartridge>(nes: *mut Nes<Cartridge>) -> Self {
         let mut mapping = HashMap::new();
         mapping.insert(unsafe { &raw const (*nes).cpu.a as u64 }, "cpu_a");
         mapping.insert(unsafe { &raw const (*nes).cpu.x as u64 }, "cpu_x");

@@ -1,7 +1,10 @@
 use crate::{compiler::frontend::nes::Nes, nes_assembly};
 use tracing::trace;
 
-pub(super) fn decode_instruction(nes: &mut Nes, address: u16) -> (nes_assembly::Instruction, bool) {
+pub(super) fn decode_instruction<Cartridge: crate::cartridge::Cartridge>(
+    nes: &mut Nes<Cartridge>,
+    address: u16,
+) -> (nes_assembly::Instruction, bool) {
     let mut next_byte_address = address;
     let mut is_prg_rom_only = true;
     let mut next_byte = || {

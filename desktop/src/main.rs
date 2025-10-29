@@ -16,7 +16,7 @@ fn main() -> Result<()> {
     };
     let rom: Vec<u8> = std::fs::read(rom_filepath).unwrap();
 
-    let mut runtime = nopt::Nopt::new(nopt::Cartridge::from_bytes_with_header(&rom));
+    let mut runtime = nopt::Nopt::new(nopt::cartridge::from_bytes_with_header(&rom));
     unsafe {
         loop {
             runtime.run();

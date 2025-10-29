@@ -26,8 +26,8 @@ impl Cpu {
     }
 
     #[expect(clippy::too_many_lines)]
-    pub(crate) fn compile<Visitor: super::Visitor>(
-        nes: &mut Nes,
+    pub(crate) fn compile<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
         visitor: Visitor,
         cpu_instruction: &nes_assembly::Instruction,
     ) {
@@ -476,8 +476,8 @@ impl Cpu {
         owned_visitor.terminate(None);
     }
 
-    fn read_u16_deref<Visitor: super::Visitor>(
-        nes: &mut Nes,
+    fn read_u16_deref<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
         visitor: &mut Visitor,
         address: Visitor::U16,
     ) -> Visitor::U16 {
@@ -497,107 +497,130 @@ impl Cpu {
         visitor.concatenate(high, low)
     }
 
-    fn cpu_c<Visitor: super::Visitor>(nes: &mut Nes, visitor: &mut Visitor) -> Visitor::U1 {
-        Self::get_cpu_flag::<_, 0>(nes, visitor)
-    }
-
-    fn set_cpu_c<Visitor: super::Visitor>(
-        nes: &mut Nes,
-        visitor: &mut Visitor,
-        value: Visitor::U1,
-    ) {
-        Self::set_cpu_flag::<_, 0>(nes, visitor, value);
-    }
-
-    fn cpu_z<Visitor: super::Visitor>(nes: &mut Nes, visitor: &mut Visitor) -> Visitor::U1 {
-        Self::get_cpu_flag::<_, 1>(nes, visitor)
-    }
-
-    fn set_cpu_z<Visitor: super::Visitor>(
-        nes: &mut Nes,
-        visitor: &mut Visitor,
-        value: Visitor::U1,
-    ) {
-        Self::set_cpu_flag::<_, 1>(nes, visitor, value);
-    }
-
-    fn set_cpu_i<Visitor: super::Visitor>(
-        nes: &mut Nes,
-        visitor: &mut Visitor,
-        value: Visitor::U1,
-    ) {
-        Self::set_cpu_flag::<_, 2>(nes, visitor, value);
-    }
-
-    fn set_cpu_d<Visitor: super::Visitor>(
-        nes: &mut Nes,
-        visitor: &mut Visitor,
-        value: Visitor::U1,
-    ) {
-        Self::set_cpu_flag::<_, 3>(nes, visitor, value);
-    }
-
-    fn cpu_b<Visitor: super::Visitor>(nes: &mut Nes, visitor: &mut Visitor) -> Visitor::U1 {
-        Self::get_cpu_flag::<_, 4>(nes, visitor)
-    }
-
-    fn set_cpu_b<Visitor: super::Visitor>(
-        nes: &mut Nes,
-        visitor: &mut Visitor,
-        value: Visitor::U1,
-    ) {
-        Self::set_cpu_flag::<_, 4>(nes, visitor, value);
-    }
-
-    fn cpu_unused_flag<Visitor: super::Visitor>(
-        nes: &mut Nes,
+    fn cpu_c<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
         visitor: &mut Visitor,
     ) -> Visitor::U1 {
-        Self::get_cpu_flag::<_, 5>(nes, visitor)
+        Self::get_cpu_flag::<_, _, 0>(nes, visitor)
     }
 
-    fn set_cpu_unused_flag<Visitor: super::Visitor>(
-        nes: &mut Nes,
+    fn set_cpu_c<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
         visitor: &mut Visitor,
         value: Visitor::U1,
     ) {
-        Self::set_cpu_flag::<_, 5>(nes, visitor, value);
+        Self::set_cpu_flag::<_, _, 0>(nes, visitor, value);
     }
 
-    fn cpu_v<Visitor: super::Visitor>(nes: &mut Nes, visitor: &mut Visitor) -> Visitor::U1 {
-        Self::get_cpu_flag::<_, 6>(nes, visitor)
+    fn cpu_z<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
+        visitor: &mut Visitor,
+    ) -> Visitor::U1 {
+        Self::get_cpu_flag::<_, _, 1>(nes, visitor)
     }
 
-    fn set_cpu_v<Visitor: super::Visitor>(
-        nes: &mut Nes,
+    fn set_cpu_z<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
         visitor: &mut Visitor,
         value: Visitor::U1,
     ) {
-        Self::set_cpu_flag::<_, 6>(nes, visitor, value);
+        Self::set_cpu_flag::<_, _, 1>(nes, visitor, value);
     }
 
-    fn cpu_n<Visitor: super::Visitor>(nes: &mut Nes, visitor: &mut Visitor) -> Visitor::U1 {
-        Self::get_cpu_flag::<_, 7>(nes, visitor)
-    }
-
-    fn set_cpu_n<Visitor: super::Visitor>(
-        nes: &mut Nes,
+    fn set_cpu_i<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
         visitor: &mut Visitor,
         value: Visitor::U1,
     ) {
-        Self::set_cpu_flag::<_, 7>(nes, visitor, value);
+        Self::set_cpu_flag::<_, _, 2>(nes, visitor, value);
     }
 
-    fn get_cpu_flag<Visitor: super::Visitor, const INDEX: u8>(
-        nes: &mut Nes,
+    fn set_cpu_d<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
+        visitor: &mut Visitor,
+        value: Visitor::U1,
+    ) {
+        Self::set_cpu_flag::<_, _, 3>(nes, visitor, value);
+    }
+
+    fn cpu_b<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
+        visitor: &mut Visitor,
+    ) -> Visitor::U1 {
+        Self::get_cpu_flag::<_, _, 4>(nes, visitor)
+    }
+
+    fn set_cpu_b<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
+        visitor: &mut Visitor,
+        value: Visitor::U1,
+    ) {
+        Self::set_cpu_flag::<_, _, 4>(nes, visitor, value);
+    }
+
+    fn cpu_unused_flag<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
+        visitor: &mut Visitor,
+    ) -> Visitor::U1 {
+        Self::get_cpu_flag::<_, _, 5>(nes, visitor)
+    }
+
+    fn set_cpu_unused_flag<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
+        visitor: &mut Visitor,
+        value: Visitor::U1,
+    ) {
+        Self::set_cpu_flag::<_, _, 5>(nes, visitor, value);
+    }
+
+    fn cpu_v<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
+        visitor: &mut Visitor,
+    ) -> Visitor::U1 {
+        Self::get_cpu_flag::<_, _, 6>(nes, visitor)
+    }
+
+    fn set_cpu_v<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
+        visitor: &mut Visitor,
+        value: Visitor::U1,
+    ) {
+        Self::set_cpu_flag::<_, _, 6>(nes, visitor, value);
+    }
+
+    fn cpu_n<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
+        visitor: &mut Visitor,
+    ) -> Visitor::U1 {
+        Self::get_cpu_flag::<_, _, 7>(nes, visitor)
+    }
+
+    fn set_cpu_n<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
+        visitor: &mut Visitor,
+        value: Visitor::U1,
+    ) {
+        Self::set_cpu_flag::<_, _, 7>(nes, visitor, value);
+    }
+
+    fn get_cpu_flag<
+        Cartridge: crate::cartridge::Cartridge,
+        Visitor: super::Visitor,
+        const INDEX: u8,
+    >(
+        nes: &mut Nes<Cartridge>,
         visitor: &mut Visitor,
     ) -> Visitor::U1 {
         let p = visitor.memory_u8(&raw const nes.cpu.p);
         visitor.get_bit(p, INDEX)
     }
 
-    fn set_cpu_flag<Visitor: super::Visitor, const INDEX: u8>(
-        nes: &mut Nes,
+    fn set_cpu_flag<
+        Cartridge: crate::cartridge::Cartridge,
+        Visitor: super::Visitor,
+        const INDEX: u8,
+    >(
+        nes: &mut Nes<Cartridge>,
         visitor: &mut Visitor,
         value: Visitor::U1,
     ) {
@@ -619,8 +642,8 @@ impl Cpu {
         visitor.set_memory_u8(&raw mut nes.cpu.p, p);
     }
 
-    fn set_cpu_nz<Visitor: super::Visitor>(
-        nes: &mut Nes,
+    fn set_cpu_nz<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
         visitor: &mut Visitor,
         value: Visitor::U8,
     ) {
@@ -631,7 +654,11 @@ impl Cpu {
         Self::set_cpu_z(nes, visitor, z);
     }
 
-    fn push_u8<Visitor: super::Visitor>(nes: &mut Nes, visitor: &mut Visitor, value: Visitor::U8) {
+    fn push_u8<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
+        visitor: &mut Visitor,
+        value: Visitor::U8,
+    ) {
         let n1 = visitor.immediate_u8(1);
 
         let s = visitor.memory_u8(&raw const nes.cpu.s);
@@ -642,8 +669,8 @@ impl Cpu {
         visitor.set_memory_u8(&raw mut nes.cpu.s, s_minus_1);
     }
 
-    fn push_u16<Visitor: super::Visitor>(
-        nes: &mut Nes,
+    fn push_u16<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
         visitor: &mut Visitor,
         value: Visitor::U16,
     ) {
@@ -654,7 +681,10 @@ impl Cpu {
         Self::push_u8(nes, visitor, low);
     }
 
-    fn pop_u8<Visitor: super::Visitor>(nes: &mut Nes, visitor: &mut Visitor) -> Visitor::U8 {
+    fn pop_u8<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
+        visitor: &mut Visitor,
+    ) -> Visitor::U8 {
         let n1 = visitor.immediate_u8(1);
 
         let s = visitor.memory_u8(&raw const nes.cpu.s);
@@ -666,15 +696,18 @@ impl Cpu {
         result
     }
 
-    fn pop_u16<Visitor: super::Visitor>(nes: &mut Nes, visitor: &mut Visitor) -> Visitor::U16 {
+    fn pop_u16<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
+        visitor: &mut Visitor,
+    ) -> Visitor::U16 {
         let low = Self::pop_u8(nes, visitor);
         let high = Self::pop_u8(nes, visitor);
 
         visitor.concatenate(high, low)
     }
 
-    fn get_operand_address<Visitor: super::Visitor>(
-        nes: &mut Nes,
+    fn get_operand_address<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
         visitor: &mut Visitor,
         cpu_instruction: &nes_assembly::Instruction,
     ) -> Visitor::U16 {
@@ -738,8 +771,8 @@ impl Cpu {
         }
     }
 
-    fn read_operand_u8<Visitor: super::Visitor>(
-        nes: &mut Nes,
+    fn read_operand_u8<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
         visitor: &mut Visitor,
         cpu_instruction: &nes_assembly::Instruction,
     ) -> Visitor::U8 {
@@ -767,8 +800,8 @@ impl Cpu {
         }
     }
 
-    fn write_operand_u8<Visitor: super::Visitor>(
-        nes: &mut Nes,
+    fn write_operand_u8<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
         visitor: &mut Visitor,
         cpu_instruction: &nes_assembly::Instruction,
         value: Visitor::U8,
@@ -797,8 +830,8 @@ impl Cpu {
         }
     }
 
-    fn read_operand_u16<Visitor: super::Visitor>(
-        nes: &mut Nes,
+    fn read_operand_u16<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
         visitor: &mut Visitor,
         cpu_instruction: &nes_assembly::Instruction,
     ) -> Visitor::U16 {
@@ -819,36 +852,37 @@ impl Cpu {
         }
     }
 
-    pub(super) fn read<Visitor: super::Visitor>(
-        nes: &mut Nes,
+    pub(super) fn read<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
         visitor: &mut Visitor,
         address: Visitor::U16,
     ) -> Visitor::U8 {
-        let mut if_address_in_range = |visitor: &mut Visitor,
-                                       address_range: RangeInclusive<u16>,
-                                       visit_true_block: fn(&mut Nes, Visitor, Visitor::U16),
-                                       false_value: Visitor::U8|
-         -> Visitor::U8 {
-            let condition = {
-                let lower_bound_condition = {
-                    let start = visitor.immediate_u16(*address_range.start());
-                    visitor.less_than_or_equal(start, address)
+        let mut if_address_in_range =
+            |visitor: &mut Visitor,
+             address_range: RangeInclusive<u16>,
+             visit_true_block: fn(&mut Nes<Cartridge>, Visitor, Visitor::U16),
+             false_value: Visitor::U8|
+             -> Visitor::U8 {
+                let condition = {
+                    let lower_bound_condition = {
+                        let start = visitor.immediate_u16(*address_range.start());
+                        visitor.less_than_or_equal(start, address)
+                    };
+                    let upper_bound_condition = {
+                        let end = visitor.immediate_u16(*address_range.end());
+                        visitor.less_than_or_equal(address, end)
+                    };
+                    visitor.and_u1(lower_bound_condition, upper_bound_condition)
                 };
-                let upper_bound_condition = {
-                    let end = visitor.immediate_u16(*address_range.end());
-                    visitor.less_than_or_equal(address, end)
-                };
-                visitor.and_u1(lower_bound_condition, upper_bound_condition)
-            };
 
-            visitor.if_else_with_result(
-                condition,
-                |visitor| visit_true_block(nes, visitor, address),
-                |visitor| {
-                    visitor.terminate(Some(false_value));
-                },
-            )
-        };
+                visitor.if_else_with_result(
+                    condition,
+                    |visitor| visit_true_block(nes, visitor, address),
+                    |visitor| {
+                        visitor.terminate(Some(false_value));
+                    },
+                )
+            };
 
         let value = visitor.immediate_u8(0);
         let value = if_address_in_range(
@@ -875,7 +909,8 @@ impl Cpu {
             |nes, mut visitor, address| {
                 let address_mask = visitor.immediate_u16(0x1fff);
                 let address = visitor.and_u16(address, address_mask);
-                let value = visitor.memory_with_offset_u8(nes.cartridge.prg_ram.as_ptr(), address);
+                let value =
+                    visitor.memory_with_offset_u8(nes.cartridge.prg_ram().as_ptr(), address);
                 visitor.terminate(Some(value));
             },
             value,
@@ -886,38 +921,43 @@ impl Cpu {
             |nes, mut visitor, address| {
                 let address_mask = visitor.immediate_u16(0x7fff);
                 let address = visitor.and_u16(address, address_mask);
-                let value = visitor.memory_with_offset_u8(nes.cartridge.prg_rom.as_ptr(), address);
+                let value =
+                    visitor.memory_with_offset_u8(nes.cartridge.prg_rom().as_ptr(), address);
                 visitor.terminate(Some(value));
             },
             value,
         )
     }
 
-    pub(super) fn write<Visitor: super::Visitor>(
-        nes: &mut Nes,
+    pub(super) fn write<Cartridge: crate::cartridge::Cartridge, Visitor: super::Visitor>(
+        nes: &mut Nes<Cartridge>,
         visitor: &mut Visitor,
         address: Visitor::U16,
         value: Visitor::U8,
     ) {
-        let mut if_address_in_range =
-            |range: RangeInclusive<u16>,
-             visit_true_block: fn(&mut Nes, Visitor, Visitor::U16, Visitor::U8)| {
-                let condition = {
-                    let lower_bound_condition = {
-                        let start = visitor.immediate_u16(*range.start());
-                        visitor.less_than_or_equal(start, address)
-                    };
-                    let upper_bound_condition = {
-                        let end = visitor.immediate_u16(*range.end());
-                        visitor.less_than_or_equal(address, end)
-                    };
-                    visitor.and_u1(lower_bound_condition, upper_bound_condition)
+        let mut if_address_in_range = |range: RangeInclusive<u16>,
+                                       visit_true_block: fn(
+            &mut Nes<Cartridge>,
+            Visitor,
+            Visitor::U16,
+            Visitor::U8,
+        )| {
+            let condition = {
+                let lower_bound_condition = {
+                    let start = visitor.immediate_u16(*range.start());
+                    visitor.less_than_or_equal(start, address)
                 };
-
-                visitor.r#if(condition, |visitor| {
-                    visit_true_block(nes, visitor, address, value);
-                });
+                let upper_bound_condition = {
+                    let end = visitor.immediate_u16(*range.end());
+                    visitor.less_than_or_equal(address, end)
+                };
+                visitor.and_u1(lower_bound_condition, upper_bound_condition)
             };
+
+            visitor.r#if(condition, |visitor| {
+                visit_true_block(nes, visitor, address, value);
+            });
+        };
 
         if_address_in_range(0x0..=0x7ff, |nes, mut visitor, address, value| {
             visitor.set_memory_with_offset_u8(nes.cpu.ram.as_mut_ptr(), address, value);
@@ -938,7 +978,11 @@ impl Cpu {
         if_address_in_range(0x6000..=0x7fff, |nes, mut visitor, address, value| {
             let address_mask = visitor.immediate_u16(0x1fff);
             let address = visitor.and_u16(address, address_mask);
-            visitor.set_memory_with_offset_u8(nes.cartridge.prg_ram.as_mut_ptr(), address, value);
+            visitor.set_memory_with_offset_u8(
+                nes.cartridge.prg_ram_mut().as_mut_ptr(),
+                address,
+                value,
+            );
             visitor.terminate(None);
         });
     }

@@ -1,4 +1,4 @@
-use nopt::{Cartridge, Nopt};
+use nopt::{Nopt, cartridge};
 use tracing_subscriber::{layer::SubscriberExt as _, util::SubscriberInitExt as _};
 
 #[test]
@@ -13,7 +13,7 @@ fn nestest() {
         )
         .init();
 
-    let cartridge = Cartridge::from_bytes_with_header(&{
+    let cartridge = cartridge::from_bytes_with_header(&{
         let mut bytes = std::fs::read("tests/roms/nestest/nestest.nes").unwrap();
 
         // patch reset vector to enable the automated test runner
