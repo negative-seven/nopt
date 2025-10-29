@@ -1,4 +1,4 @@
-use nopt::{Nopt, Rom};
+use nopt::{Cartridge, Nopt};
 use std::ffi::OsStr;
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt as _, util::SubscriberInitExt as _};
@@ -31,9 +31,10 @@ fn instr_test_v5() {
         }
         info!("running test: {}", rom_dir_entry.file_name().display());
 
-        let rom = Rom::from_bytes_with_header(std::fs::read(rom_dir_entry.path()).unwrap());
+        let cartridge =
+            Cartridge::from_bytes_with_header(&std::fs::read(rom_dir_entry.path()).unwrap());
 
-        let mut nopt = Nopt::new(rom);
+        let mut nopt = Nopt::new(cartridge);
 
         let result_code;
         loop {

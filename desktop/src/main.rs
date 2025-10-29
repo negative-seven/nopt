@@ -14,9 +14,9 @@ fn main() -> Result<()> {
     let Some(rom_filepath) = std::env::args().nth(1) else {
         panic!("missing argument: rom filepath");
     };
-    let rom = std::fs::read(rom_filepath).unwrap();
+    let rom: Vec<u8> = std::fs::read(rom_filepath).unwrap();
 
-    let mut runtime = nopt::Nopt::new(nopt::Rom::from_bytes_with_header(rom));
+    let mut runtime = nopt::Nopt::new(nopt::Cartridge::from_bytes_with_header(&rom));
     unsafe {
         loop {
             runtime.run();

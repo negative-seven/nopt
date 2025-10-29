@@ -1,9 +1,8 @@
 mod compiler;
 mod nes_assembly;
-mod rom;
 
 use crate::compiler::{Compiler, frontend::nes::Nes};
-pub use rom::Rom;
+pub use compiler::frontend::nes::Cartridge;
 use std::mem::ManuallyDrop;
 use tracing::trace;
 
@@ -14,9 +13,9 @@ pub struct Nopt {
 
 impl Nopt {
     #[must_use]
-    pub fn new(rom: Rom) -> Self {
-        let nes = Nes::new(rom);
-        let functions = vec![None; nes.rom.prg_rom().len()];
+    pub fn new(cartridge: Cartridge) -> Self {
+        let nes = Nes::new(cartridge);
+        let functions = vec![None; nes.cartridge.prg_rom.len()];
         Self {
             nes,
             prg_rom_functions: functions,
@@ -38,7 +37,7 @@ impl Nopt {
     /// underlying backend.
     pub unsafe fn run(&mut self) {
         let pc = self.nes().cpu.pc;
-        let prg_rom_len = self.nes().rom.prg_rom().len();
+        let prg_rom_len = self.nes().cartridge.prg_rom.len();
 
         let mut compile = || {
             trace!("compiling function at 0x{pc:04x}");

@@ -1,4 +1,4 @@
-use nopt::{Nopt, Rom};
+use nopt::{Cartridge, Nopt};
 use tracing_subscriber::{layer::SubscriberExt as _, util::SubscriberInitExt as _};
 
 #[test]
@@ -13,7 +13,7 @@ fn nestest() {
         )
         .init();
 
-    let rom = Rom::from_bytes_with_header({
+    let cartridge = Cartridge::from_bytes_with_header(&{
         let mut bytes = std::fs::read("tests/roms/nestest/nestest.nes").unwrap();
 
         // patch reset vector to enable the automated test runner
@@ -21,7 +21,7 @@ fn nestest() {
 
         bytes
     });
-    let mut nopt = Nopt::new(rom);
+    let mut nopt = Nopt::new(cartridge);
 
     // todo: streamline this setup
     nopt.nes_mut().cpu.p = 0x24;

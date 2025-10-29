@@ -1,4 +1,4 @@
-use nopt::{Nopt, Rom};
+use nopt::{Cartridge, Nopt};
 use regex::Regex;
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt as _, util::SubscriberInitExt as _};
@@ -19,10 +19,11 @@ fn ppu_read_buffer() {
         )
         .init();
 
-    let rom =
-        Rom::from_bytes_with_header(std::fs::read("tests/roms/test_ppu_read_buffer.nes").unwrap());
+    let cartridge = Cartridge::from_bytes_with_header(
+        &std::fs::read("tests/roms/test_ppu_read_buffer.nes").unwrap(),
+    );
 
-    let mut nopt = Nopt::new(rom);
+    let mut nopt = Nopt::new(cartridge);
 
     let result_code;
     loop {

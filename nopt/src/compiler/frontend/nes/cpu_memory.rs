@@ -57,7 +57,7 @@ pub(super) fn read<Visitor: super::Visitor>(
         |nes, mut visitor, address| {
             let address_mask = visitor.immediate_u16(0x1fff);
             let address = visitor.and_u16(address, address_mask);
-            let value = visitor.memory_with_offset_u8(nes.prg_ram.as_ptr(), address);
+            let value = visitor.memory_with_offset_u8(nes.cartridge.prg_ram.as_ptr(), address);
             visitor.terminate(Some(value));
         },
         value,
@@ -68,7 +68,7 @@ pub(super) fn read<Visitor: super::Visitor>(
         |nes, mut visitor, address| {
             let address_mask = visitor.immediate_u16(0x7fff);
             let address = visitor.and_u16(address, address_mask);
-            let value = visitor.memory_with_offset_u8(nes.rom.prg_rom().as_ptr(), address);
+            let value = visitor.memory_with_offset_u8(nes.cartridge.prg_rom.as_ptr(), address);
             visitor.terminate(Some(value));
         },
         value,
@@ -120,7 +120,7 @@ pub(super) fn write<Visitor: super::Visitor>(
     if_address_in_range(0x6000..=0x7fff, |nes, mut visitor, address, value| {
         let address_mask = visitor.immediate_u16(0x1fff);
         let address = visitor.and_u16(address, address_mask);
-        visitor.set_memory_with_offset_u8(nes.prg_ram.as_mut_ptr(), address, value);
+        visitor.set_memory_with_offset_u8(nes.cartridge.prg_ram.as_mut_ptr(), address, value);
         visitor.terminate(None);
     });
 }
