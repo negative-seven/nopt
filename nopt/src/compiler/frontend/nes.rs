@@ -1,6 +1,5 @@
 mod cartridge;
 mod cpu;
-mod cpu_memory;
 mod ppu;
 mod visitor;
 
