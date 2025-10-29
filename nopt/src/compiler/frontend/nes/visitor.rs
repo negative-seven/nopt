@@ -16,34 +16,6 @@ pub(crate) trait Visitor: Sized {
         self.concatenate(high, low)
     }
 
-    fn cpu_c(&mut self) -> Self::U1;
-
-    fn set_cpu_c(&mut self, value: Self::U1);
-
-    fn cpu_z(&mut self) -> Self::U1;
-
-    fn set_cpu_z(&mut self, value: Self::U1);
-
-    fn set_cpu_i(&mut self, value: Self::U1);
-
-    fn set_cpu_d(&mut self, value: Self::U1);
-
-    fn cpu_b(&mut self) -> Self::U1;
-
-    fn set_cpu_b(&mut self, value: Self::U1);
-
-    fn cpu_unused_flag(&mut self) -> Self::U1;
-
-    fn set_cpu_unused_flag(&mut self, value: Self::U1);
-
-    fn cpu_v(&mut self) -> Self::U1;
-
-    fn set_cpu_v(&mut self, value: Self::U1);
-
-    fn cpu_n(&mut self) -> Self::U1;
-
-    fn set_cpu_n(&mut self, value: Self::U1);
-
     fn cpu_a(&mut self) -> Self::U8;
 
     fn set_cpu_a(&mut self, value: Self::U8);

@@ -39,7 +39,7 @@ impl Cpu {
             nes_assembly::Mnemonic::Adc => {
                 let operand_0 = visitor.cpu_a();
                 let operand_1 = self.read_operand_u8(visitor, cpu_instruction);
-                let operand_carry = visitor.cpu_c();
+                let operand_carry = self.cpu_c(visitor);
 
                 let result = visitor.add_with_carry_u8(operand_0, operand_1, operand_carry);
                 let result_carry =
@@ -48,9 +48,9 @@ impl Cpu {
                     visitor.add_with_carry_u8_overflow(operand_0, operand_1, operand_carry);
 
                 visitor.set_cpu_a(result);
-                visitor.set_cpu_c(result_carry);
-                visitor.set_cpu_v(result_overflow);
-                self.set_nz(visitor, result);
+                self.set_cpu_c(visitor, result_carry);
+                self.set_cpu_v(visitor, result_overflow);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::And => {
                 let operand_0 = visitor.cpu_a();
@@ -59,7 +59,7 @@ impl Cpu {
                 let result = visitor.and_u8(operand_0, operand_1);
 
                 visitor.set_cpu_a(result);
-                self.set_nz(visitor, result);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Asl => {
                 let operand = self.read_operand_u8(visitor, cpu_instruction);
@@ -69,24 +69,24 @@ impl Cpu {
                 let result_carry = visitor.get_bit(operand, 7);
 
                 self.write_operand_u8(visitor, cpu_instruction, result);
-                visitor.set_cpu_c(result_carry);
-                self.set_nz(visitor, result);
+                self.set_cpu_c(visitor, result_carry);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Bcc => {
-                let c = visitor.cpu_c();
+                let c = self.cpu_c(visitor);
                 let not_c = visitor.not(c);
                 let address_if_true = self.read_operand_u16(visitor, cpu_instruction);
                 let address_if_false = visitor.immediate_u16(cpu_instruction.address_end());
                 jump_target = Some(visitor.select(not_c, address_if_true, address_if_false));
             }
             nes_assembly::Mnemonic::Bcs => {
-                let c = visitor.cpu_c();
+                let c = self.cpu_c(visitor);
                 let address_if_true = self.read_operand_u16(visitor, cpu_instruction);
                 let address_if_false = visitor.immediate_u16(cpu_instruction.address_end());
                 jump_target = Some(visitor.select(c, address_if_true, address_if_false));
             }
             nes_assembly::Mnemonic::Beq => {
-                let z = visitor.cpu_z();
+                let z = self.cpu_z(visitor);
                 let address_if_true = self.read_operand_u16(visitor, cpu_instruction);
                 let address_if_false = visitor.immediate_u16(cpu_instruction.address_end());
                 jump_target = Some(visitor.select(z, address_if_true, address_if_false));
@@ -99,25 +99,25 @@ impl Cpu {
                 let result = visitor.and_u8(a, operand);
                 let z = visitor.is_zero(result);
 
-                visitor.set_cpu_n(n);
-                visitor.set_cpu_v(v);
-                visitor.set_cpu_z(z);
+                self.set_cpu_n(visitor, n);
+                self.set_cpu_v(visitor, v);
+                self.set_cpu_z(visitor, z);
             }
             nes_assembly::Mnemonic::Bmi => {
-                let n = visitor.cpu_n();
+                let n = self.cpu_n(visitor);
                 let address_if_true = self.read_operand_u16(visitor, cpu_instruction);
                 let address_if_false = visitor.immediate_u16(cpu_instruction.address_end());
                 jump_target = Some(visitor.select(n, address_if_true, address_if_false));
             }
             nes_assembly::Mnemonic::Bne => {
-                let z = visitor.cpu_z();
+                let z = self.cpu_z(visitor);
                 let not_z = visitor.not(z);
                 let address_if_true = self.read_operand_u16(visitor, cpu_instruction);
                 let address_if_false = visitor.immediate_u16(cpu_instruction.address_end());
                 jump_target = Some(visitor.select(not_z, address_if_true, address_if_false));
             }
             nes_assembly::Mnemonic::Bpl => {
-                let n = visitor.cpu_n();
+                let n = self.cpu_n(visitor);
                 let not_n = visitor.not(n);
                 let address_if_true = self.read_operand_u16(visitor, cpu_instruction);
                 let address_if_false = visitor.immediate_u16(cpu_instruction.address_end());
@@ -132,25 +132,25 @@ impl Cpu {
                 let irq_handler_address = visitor.immediate_u16(0xfffe);
                 let irq_handler = self.read_u16_deref(visitor, irq_handler_address);
 
-                visitor.set_cpu_unused_flag(r#true);
-                visitor.set_cpu_b(r#true);
+                self.set_cpu_unused_flag(visitor, r#true);
+                self.set_cpu_b(visitor, r#true);
 
                 let p = visitor.cpu_p();
 
-                visitor.set_cpu_i(r#true);
+                self.set_cpu_i(visitor, r#true);
                 self.push_u16(visitor, pc_plus_two);
                 self.push_u8(visitor, p);
                 jump_target = Some(irq_handler);
             }
             nes_assembly::Mnemonic::Bvc => {
-                let v = visitor.cpu_v();
+                let v = self.cpu_v(visitor);
                 let not_v = visitor.not(v);
                 let address_if_true = self.read_operand_u16(visitor, cpu_instruction);
                 let address_if_false = visitor.immediate_u16(cpu_instruction.address_end());
                 jump_target = Some(visitor.select(not_v, address_if_true, address_if_false));
             }
             nes_assembly::Mnemonic::Bvs => {
-                let v = visitor.cpu_v();
+                let v = self.cpu_v(visitor);
                 let address_if_true = self.read_operand_u16(visitor, cpu_instruction);
                 let address_if_false = visitor.immediate_u16(cpu_instruction.address_end());
                 jump_target = Some(visitor.select(v, address_if_true, address_if_false));
@@ -158,22 +158,22 @@ impl Cpu {
             nes_assembly::Mnemonic::Clc => {
                 let r#false = visitor.immediate_u1(false);
 
-                visitor.set_cpu_c(r#false);
+                self.set_cpu_c(visitor, r#false);
             }
             nes_assembly::Mnemonic::Cld => {
                 let r#false = visitor.immediate_u1(false);
 
-                visitor.set_cpu_d(r#false);
+                self.set_cpu_d(visitor, r#false);
             }
             nes_assembly::Mnemonic::Cli => {
                 let r#false = visitor.immediate_u1(false);
 
-                visitor.set_cpu_i(r#false);
+                self.set_cpu_i(visitor, r#false);
             }
             nes_assembly::Mnemonic::Clv => {
                 let r#false = visitor.immediate_u1(false);
 
-                visitor.set_cpu_v(r#false);
+                self.set_cpu_v(visitor, r#false);
             }
             nes_assembly::Mnemonic::Cmp => {
                 let operand_0 = visitor.cpu_a();
@@ -183,8 +183,8 @@ impl Cpu {
                 let result_borrow = visitor.sub_borrow(operand_0, operand_1);
                 let result_carry = visitor.not(result_borrow);
 
-                visitor.set_cpu_c(result_carry);
-                self.set_nz(visitor, result);
+                self.set_cpu_c(visitor, result_carry);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Cpx => {
                 let operand_0 = visitor.cpu_x();
@@ -194,8 +194,8 @@ impl Cpu {
                 let result_borrow = visitor.sub_borrow(operand_0, operand_1);
                 let result_carry = visitor.not(result_borrow);
 
-                visitor.set_cpu_c(result_carry);
-                self.set_nz(visitor, result);
+                self.set_cpu_c(visitor, result_carry);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Cpy => {
                 let operand_0 = visitor.cpu_y();
@@ -205,8 +205,8 @@ impl Cpu {
                 let result_borrow = visitor.sub_borrow(operand_0, operand_1);
                 let result_carry = visitor.not(result_borrow);
 
-                visitor.set_cpu_c(result_carry);
-                self.set_nz(visitor, result);
+                self.set_cpu_c(visitor, result_carry);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Dec => {
                 let operand_0 = self.read_operand_u8(visitor, cpu_instruction);
@@ -215,7 +215,7 @@ impl Cpu {
                 let result = visitor.sub(operand_0, operand_1);
 
                 self.write_operand_u8(visitor, cpu_instruction, result);
-                self.set_nz(visitor, result);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Dex => {
                 let operand_0 = visitor.cpu_x();
@@ -224,7 +224,7 @@ impl Cpu {
                 let result = visitor.sub(operand_0, operand_1);
 
                 visitor.set_cpu_x(result);
-                self.set_nz(visitor, result);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Dey => {
                 let operand_0 = visitor.cpu_y();
@@ -233,7 +233,7 @@ impl Cpu {
                 let result = visitor.sub(operand_0, operand_1);
 
                 visitor.set_cpu_y(result);
-                self.set_nz(visitor, result);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Eor => {
                 let operand_0 = visitor.cpu_a();
@@ -242,7 +242,7 @@ impl Cpu {
                 let result = visitor.xor(operand_0, operand_1);
 
                 visitor.set_cpu_a(result);
-                self.set_nz(visitor, result);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Inc => {
                 let operand_0 = self.read_operand_u8(visitor, cpu_instruction);
@@ -251,7 +251,7 @@ impl Cpu {
                 let result = visitor.add_u8(operand_0, operand_1);
 
                 self.write_operand_u8(visitor, cpu_instruction, result);
-                self.set_nz(visitor, result);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Inx => {
                 let operand_0 = visitor.cpu_x();
@@ -260,7 +260,7 @@ impl Cpu {
                 let result = visitor.add_u8(operand_0, operand_1);
 
                 visitor.set_cpu_x(result);
-                self.set_nz(visitor, result);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Iny => {
                 let operand_0 = visitor.cpu_y();
@@ -269,7 +269,7 @@ impl Cpu {
                 let result = visitor.add_u8(operand_0, operand_1);
 
                 visitor.set_cpu_y(result);
-                self.set_nz(visitor, result);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Jmp => {
                 let address = self.read_operand_u16(visitor, cpu_instruction);
@@ -290,19 +290,19 @@ impl Cpu {
                 let result = self.read_operand_u8(visitor, cpu_instruction);
 
                 visitor.set_cpu_a(result);
-                self.set_nz(visitor, result);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Ldx => {
                 let result = self.read_operand_u8(visitor, cpu_instruction);
 
                 visitor.set_cpu_x(result);
-                self.set_nz(visitor, result);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Ldy => {
                 let result = self.read_operand_u8(visitor, cpu_instruction);
 
                 visitor.set_cpu_y(result);
-                self.set_nz(visitor, result);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Lsr => {
                 let operand = self.read_operand_u8(visitor, cpu_instruction);
@@ -312,8 +312,8 @@ impl Cpu {
                 let result_carry = visitor.get_bit(operand, 0);
 
                 self.write_operand_u8(visitor, cpu_instruction, result);
-                visitor.set_cpu_c(result_carry);
-                self.set_nz(visitor, result);
+                self.set_cpu_c(visitor, result_carry);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Nop => {}
             nes_assembly::Mnemonic::Ora => {
@@ -323,7 +323,7 @@ impl Cpu {
                 let result = visitor.or(operand_0, operand_1);
 
                 visitor.set_cpu_a(result);
-                self.set_nz(visitor, result);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Pha => {
                 let value = visitor.cpu_a();
@@ -342,46 +342,46 @@ impl Cpu {
                 let value = self.pop_u8(visitor);
 
                 visitor.set_cpu_a(value);
-                self.set_nz(visitor, value);
+                self.set_cpu_nz(visitor, value);
             }
             nes_assembly::Mnemonic::Plp => {
-                let b = visitor.cpu_b();
-                let unused_flag = visitor.cpu_unused_flag();
+                let b = self.cpu_b(visitor);
+                let unused_flag = self.cpu_unused_flag(visitor);
                 let value = self.pop_u8(visitor);
 
                 visitor.set_cpu_p(value);
-                visitor.set_cpu_b(b);
-                visitor.set_cpu_unused_flag(unused_flag);
+                self.set_cpu_b(visitor, b);
+                self.set_cpu_unused_flag(visitor, unused_flag);
             }
             nes_assembly::Mnemonic::Rol => {
                 let operand = self.read_operand_u8(visitor, cpu_instruction);
-                let operand_carry = visitor.cpu_c();
+                let operand_carry = self.cpu_c(visitor);
 
                 let result = visitor.rotate_left(operand, operand_carry);
                 let result_carry = visitor.get_bit(operand, 7);
 
                 self.write_operand_u8(visitor, cpu_instruction, result);
-                visitor.set_cpu_c(result_carry);
-                self.set_nz(visitor, result);
+                self.set_cpu_c(visitor, result_carry);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Ror => {
                 let operand = self.read_operand_u8(visitor, cpu_instruction);
-                let operand_carry = visitor.cpu_c();
+                let operand_carry = self.cpu_c(visitor);
 
                 let result = visitor.rotate_right(operand, operand_carry);
                 let result_carry = visitor.get_bit(operand, 0);
 
                 self.write_operand_u8(visitor, cpu_instruction, result);
-                visitor.set_cpu_c(result_carry);
-                self.set_nz(visitor, result);
+                self.set_cpu_c(visitor, result_carry);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Rti => {
-                let unused_flag = visitor.cpu_unused_flag();
+                let unused_flag = self.cpu_unused_flag(visitor);
                 let p = self.pop_u8(visitor);
                 let return_address = self.pop_u16(visitor);
 
                 visitor.set_cpu_p(p);
-                visitor.set_cpu_unused_flag(unused_flag);
+                self.set_cpu_unused_flag(visitor, unused_flag);
                 jump_target = Some(return_address);
             }
             nes_assembly::Mnemonic::Rts => {
@@ -395,7 +395,7 @@ impl Cpu {
             nes_assembly::Mnemonic::Sbc => {
                 let operand_0 = visitor.cpu_a();
                 let operand_1 = self.read_operand_u8(visitor, cpu_instruction);
-                let operand_carry = visitor.cpu_c();
+                let operand_carry = self.cpu_c(visitor);
                 let operand_borrow = visitor.not(operand_carry);
 
                 let result = visitor.sub_with_borrow(operand_0, operand_1, operand_borrow);
@@ -406,21 +406,21 @@ impl Cpu {
                     visitor.sub_with_borrow_overflow(operand_0, operand_1, operand_borrow);
 
                 visitor.set_cpu_a(result);
-                visitor.set_cpu_c(result_carry);
-                visitor.set_cpu_v(result_overflow);
-                self.set_nz(visitor, result);
+                self.set_cpu_c(visitor, result_carry);
+                self.set_cpu_v(visitor, result_overflow);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Sec => {
                 let r#true = visitor.immediate_u1(true);
-                visitor.set_cpu_c(r#true);
+                self.set_cpu_c(visitor, r#true);
             }
             nes_assembly::Mnemonic::Sed => {
                 let r#true = visitor.immediate_u1(true);
-                visitor.set_cpu_d(r#true);
+                self.set_cpu_d(visitor, r#true);
             }
             nes_assembly::Mnemonic::Sei => {
                 let r#true = visitor.immediate_u1(true);
-                visitor.set_cpu_i(r#true);
+                self.set_cpu_i(visitor, r#true);
             }
             nes_assembly::Mnemonic::Sta => {
                 let result = visitor.cpu_a();
@@ -437,22 +437,22 @@ impl Cpu {
             nes_assembly::Mnemonic::Tax => {
                 let result = visitor.cpu_a();
                 visitor.set_cpu_x(result);
-                self.set_nz(visitor, result);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Tay => {
                 let result = visitor.cpu_a();
                 visitor.set_cpu_y(result);
-                self.set_nz(visitor, result);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Tsx => {
                 let result = visitor.cpu_s();
                 visitor.set_cpu_x(result);
-                self.set_nz(visitor, result);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Txa => {
                 let result = visitor.cpu_x();
                 visitor.set_cpu_a(result);
-                self.set_nz(visitor, result);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Txs => {
                 let result = visitor.cpu_x();
@@ -461,7 +461,7 @@ impl Cpu {
             nes_assembly::Mnemonic::Tya => {
                 let result = visitor.cpu_y();
                 visitor.set_cpu_a(result);
-                self.set_nz(visitor, result);
+                self.set_cpu_nz(visitor, result);
             }
             nes_assembly::Mnemonic::Unimplemented => {
                 // unimplemented instructions are treated as a no-op as a
@@ -496,12 +496,103 @@ impl Cpu {
         visitor.concatenate(high, low)
     }
 
-    fn set_nz<Visitor: super::Visitor>(&mut self, visitor: &mut Visitor, value: Visitor::U8) {
+    fn cpu_c<Visitor: super::Visitor>(&mut self, visitor: &mut Visitor) -> Visitor::U1 {
+        self.get_cpu_flag::<_, 0>(visitor)
+    }
+
+    fn set_cpu_c<Visitor: super::Visitor>(&mut self, visitor: &mut Visitor, value: Visitor::U1) {
+        self.set_cpu_flag::<_, 0>(visitor, value);
+    }
+
+    fn cpu_z<Visitor: super::Visitor>(&mut self, visitor: &mut Visitor) -> Visitor::U1 {
+        self.get_cpu_flag::<_, 1>(visitor)
+    }
+
+    fn set_cpu_z<Visitor: super::Visitor>(&mut self, visitor: &mut Visitor, value: Visitor::U1) {
+        self.set_cpu_flag::<_, 1>(visitor, value);
+    }
+
+    fn set_cpu_i<Visitor: super::Visitor>(&mut self, visitor: &mut Visitor, value: Visitor::U1) {
+        self.set_cpu_flag::<_, 2>(visitor, value);
+    }
+
+    fn set_cpu_d<Visitor: super::Visitor>(&mut self, visitor: &mut Visitor, value: Visitor::U1) {
+        self.set_cpu_flag::<_, 3>(visitor, value);
+    }
+
+    fn cpu_b<Visitor: super::Visitor>(&mut self, visitor: &mut Visitor) -> Visitor::U1 {
+        self.get_cpu_flag::<_, 4>(visitor)
+    }
+
+    fn set_cpu_b<Visitor: super::Visitor>(&mut self, visitor: &mut Visitor, value: Visitor::U1) {
+        self.set_cpu_flag::<_, 4>(visitor, value);
+    }
+
+    fn cpu_unused_flag<Visitor: super::Visitor>(&mut self, visitor: &mut Visitor) -> Visitor::U1 {
+        self.get_cpu_flag::<_, 5>(visitor)
+    }
+
+    fn set_cpu_unused_flag<Visitor: super::Visitor>(
+        &mut self,
+        visitor: &mut Visitor,
+        value: Visitor::U1,
+    ) {
+        self.set_cpu_flag::<_, 5>(visitor, value);
+    }
+
+    fn cpu_v<Visitor: super::Visitor>(&mut self, visitor: &mut Visitor) -> Visitor::U1 {
+        self.get_cpu_flag::<_, 6>(visitor)
+    }
+
+    fn set_cpu_v<Visitor: super::Visitor>(&mut self, visitor: &mut Visitor, value: Visitor::U1) {
+        self.set_cpu_flag::<_, 6>(visitor, value);
+    }
+
+    fn cpu_n<Visitor: super::Visitor>(&mut self, visitor: &mut Visitor) -> Visitor::U1 {
+        self.get_cpu_flag::<_, 7>(visitor)
+    }
+
+    fn set_cpu_n<Visitor: super::Visitor>(&mut self, visitor: &mut Visitor, value: Visitor::U1) {
+        self.set_cpu_flag::<_, 7>(visitor, value);
+    }
+
+    fn get_cpu_flag<Visitor: super::Visitor, const INDEX: u8>(
+        &mut self,
+        visitor: &mut Visitor,
+    ) -> Visitor::U1 {
+        let p = visitor.cpu_p();
+        visitor.get_bit(p, INDEX)
+    }
+
+    fn set_cpu_flag<Visitor: super::Visitor, const INDEX: u8>(
+        &mut self,
+        visitor: &mut Visitor,
+        value: Visitor::U1,
+    ) {
+        let clear_bit_mask = visitor.immediate_u8(!(1 << INDEX));
+
+        let p = visitor.cpu_p();
+        let p = visitor.and_u8(p, clear_bit_mask);
+        let p = visitor.if_else_with_result(
+            value,
+            |mut visitor| {
+                let set_bit_mask = visitor.immediate_u8(1 << INDEX);
+                let p = visitor.or(p, set_bit_mask);
+                visitor.terminate(Some(p));
+            },
+            |visitor| {
+                visitor.terminate(Some(p));
+            },
+        );
+        visitor.set_cpu_p(p);
+    }
+
+    fn set_cpu_nz<Visitor: super::Visitor>(&mut self, visitor: &mut Visitor, value: Visitor::U8) {
         let n = visitor.get_bit(value, 7);
         let z = visitor.is_zero(value);
 
-        visitor.set_cpu_n(n);
-        visitor.set_cpu_z(z);
+        self.set_cpu_n(visitor, n);
+        self.set_cpu_z(visitor, z);
     }
 
     fn push_u8<Visitor: super::Visitor>(&mut self, visitor: &mut Visitor, value: Visitor::U8) {
