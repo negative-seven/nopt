@@ -1,4 +1,4 @@
-use crate::compiler::frontend::nes::{Nes, ppu};
+use crate::compiler::frontend::nes::Nes;
 use std::ops::RangeInclusive;
 
 pub(super) fn read<Visitor: super::Visitor>(
@@ -46,7 +46,7 @@ pub(super) fn read<Visitor: super::Visitor>(
         visitor,
         0x2007..=0x2007,
         |nes, mut visitor, _| {
-            let value = ppu::read_ppudata(&mut nes.ppu, &mut visitor);
+            let value = nes.ppu.read_ppudata(&mut visitor);
             visitor.terminate(Some(value));
         },
         value,
@@ -110,11 +110,11 @@ pub(super) fn write<Visitor: super::Visitor>(
         visitor.terminate(None);
     });
     if_address_in_range(0x2006..=0x2006, |nes, mut visitor, _, value| {
-        ppu::write_ppuaddr(&mut nes.ppu, &mut visitor, value);
+        nes.ppu.write_ppuaddr(&mut visitor, value);
         visitor.terminate(None);
     });
     if_address_in_range(0x2007..=0x2007, |nes, mut visitor, _, value| {
-        ppu::write_ppudata(&mut nes.ppu, &mut visitor, value);
+        nes.ppu.write_ppudata(&mut visitor, value);
         visitor.terminate(None);
     });
     if_address_in_range(0x6000..=0x7fff, |nes, mut visitor, address, value| {
