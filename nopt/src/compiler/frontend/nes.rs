@@ -4,7 +4,7 @@ mod ppu;
 mod visitor;
 
 use crate::Rom;
-pub(crate) use cpu::{Compiler, Cpu};
+pub(crate) use cpu::Cpu;
 pub(crate) use ppu::Ppu;
 pub(crate) use visitor::Visitor;
 

@@ -2,7 +2,7 @@ mod instruction_decoder;
 pub(crate) mod nes;
 
 use crate::compiler::{
-    frontend::nes::{Compiler, Nes, Visitor},
+    frontend::nes::{Nes, Visitor},
     ir::{
         BasicBlock, Definition1, Definition8, Definition16, Destination8, Destination16, Function,
         Instruction, Jump, Variable1, Variable8, Variable16,
@@ -11,18 +11,18 @@ use crate::compiler::{
 use std::{cell::RefCell, rc::Rc, sync::atomic::AtomicUsize};
 
 pub(super) fn compile_instruction(nes: &mut Nes, address: u16) -> (Function, bool) {
-    let (nes_instruction, is_prg_rom_only) = instruction_decoder::decode_instruction(nes, address);
+    let (cpu_instruction, is_prg_rom_only) = instruction_decoder::decode_instruction(nes, address);
 
     let basic_block = Rc::new(RefCell::new(BasicBlock::new(Rc::new(AtomicUsize::new(0)))));
-    Compiler {
-        visitor: CompilerVisitor {
-            nes,
+    let nes_pointer = nes as *mut _;
+    nes.cpu.compile(
+        CompilerVisitor {
+            nes: nes_pointer,
             current_block: Rc::clone(&basic_block),
             exit_block: None,
         },
-        cpu_instruction: nes_instruction,
-    }
-    .compile();
+        &cpu_instruction,
+    );
 
     (Function { basic_block }, is_prg_rom_only)
 }
