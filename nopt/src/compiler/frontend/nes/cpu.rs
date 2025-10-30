@@ -1,4 +1,7 @@
-use crate::{compiler::frontend::nes::Nes, nes_assembly};
+use crate::{
+    compiler::frontend::nes::{Nes, Ppu},
+    nes_assembly,
+};
 use std::ops::RangeInclusive;
 use tracing::warn;
 
@@ -898,7 +901,7 @@ impl Cpu {
             visitor,
             0x2007..=0x2007,
             |nes, mut visitor, _| {
-                let value = nes.ppu.read_ppudata(&mut visitor);
+                let value = Ppu::read_ppudata(nes, &mut visitor);
                 visitor.terminate(Some(value));
             },
             value,
@@ -970,7 +973,7 @@ impl Cpu {
             visitor.terminate(None);
         });
         if_address_in_range(0x2007..=0x2007, |nes, mut visitor, _, value| {
-            nes.ppu.write_ppudata(&mut visitor, value);
+            Ppu::write_ppudata(nes, &mut visitor, value);
             visitor.terminate(None);
         });
         if_address_in_range(0x6000..=0x7fff, |nes, mut visitor, address, value| {

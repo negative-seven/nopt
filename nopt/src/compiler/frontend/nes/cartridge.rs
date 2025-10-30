@@ -9,10 +9,17 @@ pub fn from_bytes_with_header(bytes: &[u8]) -> AnyCartridge {
     let prg_rom_chunks = header_bytes[4];
     let (prg_rom, _chr_rom) = rom_bytes.split_at(usize::from(prg_rom_chunks) * 0x4000);
 
-    AnyCartridge::Nrom(Nrom::new(prg_rom))
+    let is_mirroring_horizontal = (header_bytes[6] & (1 << 0)) != 0;
+
+    AnyCartridge::Nrom(Nrom::new(prg_rom, is_mirroring_horizontal))
 }
 
 pub trait Cartridge {
+    fn read_is_mirroring_horizontal<Visitor: super::Visitor>(
+        &self,
+        visitor: &mut Visitor,
+    ) -> Visitor::U1;
+
     fn read_prg_rom<Visitor: super::Visitor>(
         &self,
         visitor: &mut Visitor,
@@ -46,6 +53,15 @@ pub enum AnyCartridge {
 }
 
 impl Cartridge for AnyCartridge {
+    fn read_is_mirroring_horizontal<Visitor: super::Visitor>(
+        &self,
+        visitor: &mut Visitor,
+    ) -> Visitor::U1 {
+        match self {
+            AnyCartridge::Nrom(cartridge) => cartridge.read_is_mirroring_horizontal(visitor),
+        }
+    }
+
     fn read_prg_rom<Visitor: super::Visitor>(
         &self,
         visitor: &mut Visitor,
