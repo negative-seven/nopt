@@ -20,15 +20,44 @@ impl Nrom {
 }
 
 impl Cartridge for Nrom {
-    fn prg_rom(&self) -> &[u8] {
-        &self.prg_rom
+    fn read_prg_rom<Visitor: crate::compiler::frontend::Visitor>(
+        &self,
+        visitor: &mut Visitor,
+        address: Visitor::U16,
+    ) -> Visitor::U8 {
+        visitor.memory_with_offset_u8(self.prg_rom.as_ptr(), address)
     }
 
-    fn prg_ram(&self) -> &[u8] {
-        &self.prg_ram
+    fn read_prg_ram<Visitor: crate::compiler::frontend::Visitor>(
+        &self,
+        visitor: &mut Visitor,
+        address: Visitor::U16,
+    ) -> Visitor::U8 {
+        visitor.memory_with_offset_u8(self.prg_ram.as_ptr(), address)
     }
 
-    fn prg_ram_mut(&mut self) -> &mut [u8] {
-        &mut self.prg_ram
+    fn write_prg_ram<Visitor: crate::compiler::frontend::Visitor>(
+        &mut self,
+        visitor: &mut Visitor,
+        address: Visitor::U16,
+        value: Visitor::U8,
+    ) {
+        visitor.set_memory_with_offset_u8(self.prg_ram.as_mut_ptr(), address, value);
+    }
+
+    fn reset_vector(&self) -> u16 {
+        u16::from_le_bytes(
+            self.prg_rom[self.prg_rom.len() - 0x4..][..size_of::<u16>()]
+                .try_into()
+                .unwrap(),
+        )
+    }
+
+    fn peek_prg_rom(&self, address: u16) -> u8 {
+        self.prg_rom[usize::from(address)]
+    }
+
+    fn peek_prg_ram(&self, address: u16) -> u8 {
+        self.prg_ram[usize::from(address)]
     }
 }

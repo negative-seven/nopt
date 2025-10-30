@@ -13,11 +13,32 @@ pub fn from_bytes_with_header(bytes: &[u8]) -> AnyCartridge {
 }
 
 pub trait Cartridge {
-    fn prg_rom(&self) -> &[u8];
+    fn read_prg_rom<Visitor: super::Visitor>(
+        &self,
+        visitor: &mut Visitor,
+        address: Visitor::U16,
+    ) -> Visitor::U8;
 
-    fn prg_ram(&self) -> &[u8];
+    fn read_prg_ram<Visitor: super::Visitor>(
+        &self,
+        visitor: &mut Visitor,
+        address: Visitor::U16,
+    ) -> Visitor::U8;
 
-    fn prg_ram_mut(&mut self) -> &mut [u8];
+    fn write_prg_ram<Visitor: super::Visitor>(
+        &mut self,
+        visitor: &mut Visitor,
+        address: Visitor::U16,
+        value: Visitor::U8,
+    );
+
+    // TODO: obsolete all functions below with an interpreting Visitor
+
+    fn reset_vector(&self) -> u16;
+
+    fn peek_prg_rom(&self, address: u16) -> u8;
+
+    fn peek_prg_ram(&self, address: u16) -> u8;
 }
 
 pub enum AnyCartridge {
@@ -25,21 +46,52 @@ pub enum AnyCartridge {
 }
 
 impl Cartridge for AnyCartridge {
-    fn prg_rom(&self) -> &[u8] {
+    fn read_prg_rom<Visitor: super::Visitor>(
+        &self,
+        visitor: &mut Visitor,
+        address: Visitor::U16,
+    ) -> Visitor::U8 {
         match self {
-            AnyCartridge::Nrom(cartridge) => cartridge.prg_rom(),
+            AnyCartridge::Nrom(cartridge) => cartridge.read_prg_rom(visitor, address),
         }
     }
 
-    fn prg_ram(&self) -> &[u8] {
+    fn read_prg_ram<Visitor: super::Visitor>(
+        &self,
+        visitor: &mut Visitor,
+        address: Visitor::U16,
+    ) -> Visitor::U8 {
         match self {
-            AnyCartridge::Nrom(cartridge) => cartridge.prg_ram(),
+            AnyCartridge::Nrom(cartridge) => cartridge.read_prg_ram(visitor, address),
         }
     }
 
-    fn prg_ram_mut(&mut self) -> &mut [u8] {
+    fn write_prg_ram<Visitor: super::Visitor>(
+        &mut self,
+        visitor: &mut Visitor,
+        address: Visitor::U16,
+        value: Visitor::U8,
+    ) {
         match self {
-            AnyCartridge::Nrom(cartridge) => cartridge.prg_ram_mut(),
+            AnyCartridge::Nrom(cartridge) => cartridge.write_prg_ram(visitor, address, value),
+        }
+    }
+
+    fn reset_vector(&self) -> u16 {
+        match self {
+            AnyCartridge::Nrom(cartridge) => cartridge.reset_vector(),
+        }
+    }
+
+    fn peek_prg_rom(&self, address: u16) -> u8 {
+        match self {
+            AnyCartridge::Nrom(cartridge) => cartridge.peek_prg_rom(address),
+        }
+    }
+
+    fn peek_prg_ram(&self, address: u16) -> u8 {
+        match self {
+            AnyCartridge::Nrom(cartridge) => cartridge.peek_prg_ram(address),
         }
     }
 }

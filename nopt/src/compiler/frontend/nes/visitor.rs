@@ -1,4 +1,4 @@
-pub(crate) trait Visitor: Sized {
+pub trait Visitor: Sized {
     type U1: Copy;
     type U8: Copy;
     type U16: Copy;

@@ -15,7 +15,7 @@ impl<Cartridge: cartridge::Cartridge> Nopt<Cartridge> {
     #[must_use]
     pub fn new(cartridge: Cartridge) -> Self {
         let nes = Nes::new(cartridge);
-        let functions = vec![None; nes.cartridge.prg_rom().len()];
+        let functions = vec![None; 0x8000];
         Self {
             nes,
             prg_rom_functions: functions,
@@ -37,7 +37,6 @@ impl<Cartridge: cartridge::Cartridge> Nopt<Cartridge> {
     /// underlying backend.
     pub unsafe fn run(&mut self) {
         let pc = self.nes().cpu.pc;
-        let prg_rom_len = self.nes().cartridge.prg_rom().len();
 
         let mut compile = || {
             trace!("compiling function at 0x{pc:04x}");
@@ -57,8 +56,9 @@ impl<Cartridge: cartridge::Cartridge> Nopt<Cartridge> {
         let function = {
             let mut dummy_entry = None;
             let entry = if pc >= 0x8000 {
+                let prg_rom_functions_len = self.prg_rom_functions.len();
                 self.prg_rom_functions
-                    .get_mut(usize::from(pc) & (prg_rom_len - 1))
+                    .get_mut(usize::from(pc) & (prg_rom_functions_len - 1))
                     .unwrap()
             } else {
                 &mut dummy_entry

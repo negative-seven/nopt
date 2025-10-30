@@ -15,11 +15,7 @@ pub struct Nes<Cartridge: cartridge::Cartridge> {
 
 impl<Cartridge: cartridge::Cartridge> Nes<Cartridge> {
     pub fn new(cartridge: Cartridge) -> Self {
-        let cpu_pc = u16::from_le_bytes(
-            cartridge.prg_rom()[cartridge.prg_rom().len() - 0x4..][..size_of::<u16>()]
-                .try_into()
-                .unwrap(),
-        );
+        let cpu_pc = cartridge.reset_vector();
         Self {
             cartridge,
             cpu: Cpu::new(cpu_pc),
@@ -31,9 +27,8 @@ impl<Cartridge: cartridge::Cartridge> Nes<Cartridge> {
         match address {
             0..0x2000 => self.cpu.ram[usize::from(address) & 0x7ff],
             0x2000..0x6000 => unimplemented!("peek 0x{address:04x}"),
-            0x6000..0x8000 => self.cartridge.prg_ram()[usize::from(address) & 0x1fff],
-            0x8000..=0xffff => self.cartridge.prg_rom()
-                [usize::from(address) & (self.cartridge.prg_rom().len() - 1)],
+            0x6000..0x8000 => self.cartridge.peek_prg_ram(address & 0x1fff),
+            0x8000..=0xffff => self.cartridge.peek_prg_rom(address & 0x7fff),
         }
     }
 }

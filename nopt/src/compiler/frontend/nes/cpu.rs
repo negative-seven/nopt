@@ -909,8 +909,7 @@ impl Cpu {
             |nes, mut visitor, address| {
                 let address_mask = visitor.immediate_u16(0x1fff);
                 let address = visitor.and_u16(address, address_mask);
-                let value =
-                    visitor.memory_with_offset_u8(nes.cartridge.prg_ram().as_ptr(), address);
+                let value = nes.cartridge.read_prg_ram(&mut visitor, address);
                 visitor.terminate(Some(value));
             },
             value,
@@ -921,8 +920,7 @@ impl Cpu {
             |nes, mut visitor, address| {
                 let address_mask = visitor.immediate_u16(0x7fff);
                 let address = visitor.and_u16(address, address_mask);
-                let value =
-                    visitor.memory_with_offset_u8(nes.cartridge.prg_rom().as_ptr(), address);
+                let value = nes.cartridge.read_prg_rom(&mut visitor, address);
                 visitor.terminate(Some(value));
             },
             value,
@@ -978,11 +976,7 @@ impl Cpu {
         if_address_in_range(0x6000..=0x7fff, |nes, mut visitor, address, value| {
             let address_mask = visitor.immediate_u16(0x1fff);
             let address = visitor.and_u16(address, address_mask);
-            visitor.set_memory_with_offset_u8(
-                nes.cartridge.prg_ram_mut().as_mut_ptr(),
-                address,
-                value,
-            );
+            nes.cartridge.write_prg_ram(&mut visitor, address, value);
             visitor.terminate(None);
         });
     }
